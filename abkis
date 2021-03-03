@@ -302,6 +302,7 @@ arch-chroot /mnt /bin/bash -c "hwclock --systohc"
 arch-chroot /mnt /bin/bash -c "useradd -m -G wheel ${username}"
 arch-chroot /mnt /bin/bash -c 'echo "'"${username}:${password}"'" | chpasswd'
 arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
+sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers
 
 echo "${hostname}" > /mnt/etc/hostname
 
@@ -369,7 +370,6 @@ clear
 case $retval in
   0)
     arch-chroot /mnt /bin/bash -c "bootctl install"
-#    echo -e "title Arch Linux\nlinux /vmlinuz-linux\ninitrd /intel-ucode.img\ninitrd /initramfs-linux.img\noptions root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
     printf "%s\n" "title Arch Linux" "linux /vmlinuz-linux" "initrd /initramfs-linux.img" "options root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
     ;;
   1)
