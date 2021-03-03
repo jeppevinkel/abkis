@@ -1,5 +1,6 @@
 #!/bin/bash
 
+pacman -Sy
 pacman -S --noconfirm dialog
 
 #######################
@@ -368,8 +369,8 @@ clear
 case $retval in
   0)
     arch-chroot /mnt /bin/bash -c "bootctl install"
-    echo -e "title Arch Linux\nlinux /vmlinuz-linux\ninitrd /intel-ucode.img\ninitrd /initramfs-linux.img\noptions root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
-#     printf "%s\n" "title Arch Linux" "linux /vmlinuz-linux" "initrd /initramfs-linux.img" "options root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
+#    echo -e "title Arch Linux\nlinux /vmlinuz-linux\ninitrd /intel-ucode.img\ninitrd /initramfs-linux.img\noptions root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
+    printf "%s\n" "title Arch Linux" "linux /vmlinuz-linux" "initrd /initramfs-linux.img" "options root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
     ;;
   1)
     dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
@@ -391,7 +392,6 @@ case $retval in
   0)
     arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma plasma-wayland-session egl-wayland kde-applications"
     arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
-    echo "title Arch Linux\nlinux /vmlinuz-linux\ninitrd /initramfs-linux.img\noptions root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
     ;;
   1)
     dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
