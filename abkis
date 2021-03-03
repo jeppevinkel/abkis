@@ -369,7 +369,7 @@ case $retval in
     echo "title Arch Linux\nlinux /vmlinuz-linux\ninitrd /initramfs-linux.img\noptions root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
     ;;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
+    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
   255)
     dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
 esac
@@ -391,7 +391,7 @@ case $retval in
     echo "title Arch Linux\nlinux /vmlinuz-linux\ninitrd /initramfs-linux.img\noptions root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
     ;;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
+    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
   255)
     dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
 esac
