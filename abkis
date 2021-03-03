@@ -94,7 +94,7 @@ case $retval in
     if [ -z "$password" ]; then
         dialog --stdout --title "Error" --clear --msgbox "Password cannot be empty" 10 30;
         clear;
-        exit 1;
+        exit 1;;
     fi
   1)
     dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
