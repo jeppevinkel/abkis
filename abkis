@@ -4,9 +4,6 @@
 # Confirmation dialog #
 #######################
 
-mkdir ./{test1,test2}
-exit
-
 dialog --stdout --title "Confirm" --clear --yesno "Have you set up the partition table?" 10 30
 
 retval=$?
