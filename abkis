@@ -301,6 +301,7 @@ arch-chroot /mnt /bin/bash -c "hwclock --systohc"
 
 arch-chroot /mnt /bin/bash -c "useradd -m -G wheel ${username}"
 arch-chroot /mnt /bin/bash -c 'echo "'"${username}:${password}"'" | chpasswd'
+arch-chroot /mnt /bin/bash -c 'echo "'"root:${password}"'" | chpasswd'
 arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
 sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers
 
@@ -399,4 +400,4 @@ case $retval in
     dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
 esac
 
-dialog --stdout --title "The End" --clear --msgbox "Your system has now been set up and is ready for use!" 10 40
+dialog --stdout --title "The End" --clear --msgbox "Your system has now been set up and is ready for use!\nThe root password is the same as your user, so consider changing it for extra security." 10 40
