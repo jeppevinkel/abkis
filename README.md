@@ -11,8 +11,6 @@ Arch BTRFS KDE Install Script
 
 https://github.com/jeppevinkel/abkis/blob/master/abkis
 
-- `curl -LO https://github.com/jeppevinkel/abkis/blob/master/abkis`
-- `chmod +x abkis`
-- `./abkis`
+- `curl -LO https://jeppevinkel.github.io/abkis | bash`
 Simply follow the on-screen instructions until it's complete.
 - `reboot`
