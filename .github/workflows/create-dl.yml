@@ -29,11 +29,10 @@ jobs:
       
       - run: |
           git config pull.rebase false
-          git fetch --depth=1 abkis -p --tags
           git fetch
           git pull
           ls
-          git show master:abkis > test.txt
+          git show origin/master:abkis > test.txt
           ls
           git add .
           git commit -m "Update gp"
