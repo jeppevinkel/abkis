@@ -1,0 +1,403 @@
+#!/bin/bash
+
+pacman -Sy
+pacman -S --noconfirm dialog
+
+#######################
+# Confirmation dialog #
+#######################
+
+dialog --stdout --title "Confirm" --clear --yesno "Have you set up the partition table?" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    ;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "I expect the following partitions\n\nEfi:  FAT32\nRoot: BTRFS\nSwap: SWAP" 10 40;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+###################
+# Hostname dialog #
+###################
+
+hostname=$(dialog --stdout --title "Hostname" --clear --inputbox "Enter hostname" 0 0)
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    if [ -z "$hostname" ]; then
+        dialog --stdout --title "Error" --clear --msgbox "Hostname cannot be empty" 10 30;
+        clear;
+        exit 1;
+    fi
+    echo "Input string is ${hostname}";;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+###################
+# Username dialog #
+###################
+
+username=$(dialog --stdout --title "Username" --clear --inputbox "Enter username" 0 0)
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    if [ -z "$username" ]; then
+        dialog --stdout --title "Error" --clear --msgbox "Username cannot be empty" 10 30;
+        clear;
+        exit 1;
+    fi
+    echo "Input string is ${username}";;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+###################
+# Password dialog #
+###################
+
+password=$(dialog --stdout --title "Password" --clear --passwordbox "Enter password" 0 0)
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    if [ -z "$password" ]; then
+        dialog --stdout --title "Error" --clear --msgbox "Password cannot be empty" 10 30;
+        clear;
+        exit 1;
+    fi;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+
+password_repeat=$(dialog --stdout --title "Password" --clear --passwordbox "Repeat password" 0 0)
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    if [ -z "$password_repeat" ]; then
+        dialog --stdout --title "Error" --clear --msgbox "Password cannot be empty" 10 30;
+        clear;
+        exit 1;
+    elif [ "$password" != "$password_repeat" ]; then
+        dialog --stdout --title "Error" --clear --msgbox "Passwords did not match" 10 30;
+        clear;
+        exit 1;
+    fi
+    echo "Input string is ${password_repeat}";;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+#######################
+# Confirmation dialog #
+#######################
+
+dialog --stdout --title "Confirm" --clear --yesno "Hostname: ${hostname}\nUsername: ${username}" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    ;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+####################
+# Partition dialog #
+####################
+
+partitionlist=$(lsblk -plnx size -I 8 -o name,size,type | grep -Ev "boot|rpmb|loop|disk" | tac | awk '{print $1 " " $2}')
+
+efi_partition=$(dialog --stdout --title "Partitions" --menu "Select efi partition" 0 0 0 ${partitionlist})
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    if [ $(lsblk -n -o fstype ${efi_partition}) != "vfat" ]; then
+        dialog --stdout --title "Error" --clear --msgbox "The selected partition isn't a FAT filesystem" 10 30;
+        clear;
+        exit 1;
+    fi
+    ;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+
+root_partition=$(dialog --stdout --title "Partitions" --menu "Select root partition" 0 0 0 ${partitionlist})
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    if [ $(lsblk -n -o fstype ${root_partition}) != "btrfs" ]; then
+        dialog --stdout --title "Error" --clear --msgbox "The selected partition isn't a BTRFS filesystem" 10 30;
+        clear;
+        exit 1;
+    fi
+    ;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+
+swap_partition=$(dialog --stdout --title "Partitions" --menu "Select swap partition" 0 0 0 ${partitionlist})
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    if [ $(lsblk -n -o fstype ${swap_partition}) != "swap" ]; then
+        dialog --stdout --title "Error" --clear --msgbox "The selected partition isn't a SWAP filesystem" 10 30;
+        clear;
+        exit 1;
+    fi
+    ;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+#######################
+# Confirmation dialog #
+#######################
+
+dialog --stdout --title "Confirm" --clear --yesno "Efi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    ;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+#############################
+# Stop here if just testing #
+#############################
+
+if [ "$EUID" -ne 0 ]; then
+    echo "Stopping here to avoid issues since you aren't root!"
+    exit 1
+fi
+
+####################
+# Atumatic section #
+####################
+
+mkswap $swap_partition
+
+mount $root_partition /mnt
+
+btrfs subvolume create /mnt/@
+btrfs subvolume create /mnt/@home
+
+umount /mnt
+
+mount -o noatime,compress=lzo,space_cache,subvol=@ $root_partition /mnt
+mkdir /mnt/{boot,home}
+mount -o noatime,compress=lzo,space_cache,subvol=@home $root_partition /mnt/home
+
+mount $efi_partition /mnt/boot
+
+pacstrap /mnt base base-devel linux linux-firmware micro sudo intel-ucode
+
+genfstab -U /mnt >> /mnt/etc/fstab
+
+arch-chroot /mnt /bin/bash -c "ln -sf /usr/share/zoneinfo/Europe/Copenhagen /etc/localtime"
+arch-chroot /mnt /bin/bash -c "hwclock --systohc"
+
+arch-chroot /mnt /bin/bash -c "useradd -m -G wheel ${username}"
+arch-chroot /mnt /bin/bash -c 'echo "'"${username}:${password}"'" | chpasswd'
+arch-chroot /mnt /bin/bash -c 'echo "'"root:${password}"'" | chpasswd'
+arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
+sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers
+
+echo "${hostname}" > /mnt/etc/hostname
+
+echo "127.0.0.1    localhost" >> /mnt/etc/hosts
+echo "::1          localhost" >> /mnt/etc/hosts
+echo "127.0.1.1    ${hostname}.localdomain ${hostname}" >> /mnt/etc/hosts
+
+#################
+# Locale dialog #
+#################
+
+localelist=$(grep UTF-8 /mnt/etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{print $1 " " $2}' | uniq)
+
+locale=$(dialog --stdout --title "Locale" --clear --menu "Select locale" 20 61 5 ${localelist})
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    echo 'LANG="'"${locale}.UTF-8"'"' > /mnt/etc/locale.conf
+    arch-chroot /mnt /bin/bash -c "sed -i 's/#\('${locale}.UTF-8'\)/\1/' /etc/locale.gen"
+    arch-chroot /mnt /bin/bash -c "locale-gen"
+    ;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "No locale has been generated!" 10 30;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "No locale has been generated!" 10 30;;
+esac
+
+#################
+# Keymap dialog #
+#################
+
+keymaplist=$(find /usr/share/kbd/keymaps -type f -printf "%f %h\n" | sort -V | sed 's/.map.gz//g' | sed 's/\/.*.\///')
+
+keymap=$(dialog --stdout --title "Keymap" --clear --menu "Select keymap" 20 61 5 ${keymaplist})
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    echo 'KEYMAP="'"${keymap}"'"' > /mnt/etc/vconsole.conf
+    loadkeys "$keymap"
+    ;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "No keymap has been selected!" 10 30;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "No keymap has been selected!" 10 30;;
+esac
+
+#############################
+# Setup systemd-boot dialog #
+#############################
+
+dialog --stdout --title "Boot" --clear --yesno "Setup systemd-boot?" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    arch-chroot /mnt /bin/bash -c "bootctl install"
+    printf "%s\n" "title Arch Linux" "linux /vmlinuz-linux" "initrd /initramfs-linux.img" "options root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
+    ;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
+esac
+
+##############################
+# Desktop Environment dialog #
+##############################
+
+dialog --stdout --title "Desktop Environment" --clear --yesno "Setup KDE-Plasma?" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma plasma-wayland-session egl-wayland kde-applications"
+    arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
+    ;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
+esac
+
+dialog --stdout --title "The End" --clear --msgbox "Your system has now been set up and is ready for use!\nThe root password is the same as your user, so consider changing it for extra security." 10 40
