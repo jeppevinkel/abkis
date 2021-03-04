@@ -33,9 +33,7 @@ jobs:
           git config --global user.name "github-actions"
           git fetch
           git pull
-          ls
-          git show origin/master:abkis > test.txt
-          ls
+          git show origin/master:abkis > index.html
           git add .
           git commit -m "Update gp"
           git push
