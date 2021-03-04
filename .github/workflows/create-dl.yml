@@ -27,7 +27,7 @@ jobs:
         with:
           ref: gp
       
-      - run: git show master:abkis > index.html
+      - run: "git show master:abkis > index.html"
       
       - run: git add .
       - run: git commit -m "Update gp"
