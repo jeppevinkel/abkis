@@ -9,7 +9,10 @@ Arch BTRFS KDE Install Script
 
 ## Instructions
 
-- `wget -L -O abkis https://github.com/jeppevinkel/abkis/tarball/master | tar xz`
-- `./abkis/abkis`
+https://github.com/jeppevinkel/abkis/blob/master/abkis
+
+- `curl -LO https://github.com/jeppevinkel/abkis/blob/master/abkis`
+- `chmod +x abkis`
+- `./abkis`
 Simply follow the on-screen instructions until it's complete.
 - `reboot`
