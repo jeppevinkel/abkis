@@ -33,7 +33,7 @@ jobs:
           git fetch
           git pull
           ls
-          git remote show master:/abkis > test.txt
+          git show master:abkis > test.txt
           ls
           git add .
           git commit -m "Update gp"
