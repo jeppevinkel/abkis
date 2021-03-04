@@ -27,11 +27,13 @@ jobs:
         with:
           ref: gp
       
-      - run: "git show master:abkis > index.html"
-      
-      - run: git add .
-      - run: git commit -m "Update gp"
-      - run: git push
+      - run: |
+          git fetch
+          git pull
+          git show master:abkis > index.html
+          git add .
+          git commit -m "Update gp"
+          git push
 
 
 
