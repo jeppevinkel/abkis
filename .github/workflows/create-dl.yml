@@ -28,6 +28,7 @@ jobs:
           ref: gp
       
       - run: |
+          git config pull.rebase false
           git fetch
           git pull
           git show master:abkis > index.html
