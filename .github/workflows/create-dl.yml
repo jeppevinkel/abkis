@@ -31,6 +31,7 @@ jobs:
           git config pull.rebase false
           git fetch
           git pull
+          ls
           git checkout -b master abkis
           git add .
           git commit -m "Update gp"
