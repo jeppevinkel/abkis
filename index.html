@@ -292,7 +292,7 @@ mount -o noatime,compress=lzo,space_cache,subvol=@home $root_partition /mnt/home
 
 mount $efi_partition /mnt/boot
 
-pacstrap /mnt base base-devel linux linux-firmware micro sudo intel-ucode
+pacstrap /mnt base base-devel linux linux-firmware micro sudo intel-ucode networkmanager
 
 genfstab -U /mnt >> /mnt/etc/fstab
 
