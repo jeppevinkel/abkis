@@ -3,6 +3,34 @@
 pacman -Sy
 pacman -S --noconfirm dialog
 
+#################
+# Locale dialog #
+#################
+
+localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{print $1 " " $2 " OFF"}' | awk -v RS='[,[:space:]]+' '!a[$0]++{printf "%s%s", $0, RT}')
+
+locale=$(dialog --stdout --title "Locale" --checklist "Select locale" 20 61 5 "en_US UTF-8 OFF da_DK UTF-8 OFF")
+# locale=$(dialog --stdout --title "Locale" --checklist "Select locale" 20 61 5 ${localelist})
+
+# retval=$?
+
+# clear
+# 
+# case $retval in
+#   0)
+# 	should_set_locale=true
+#     ;;
+#   1)
+# 	should_set_locale=false
+#     dialog --stdout --title "Info" --msgbox "No locale has been generated!" 10 30;;
+#   255)
+# 	should_set_locale=false
+#     dialog --stdout --title "Info" --msgbox "No locale has been generated!" 10 30;;
+# esac
+
+# clear
+exit 1
+
 #######################
 # Confirmation dialog #
 #######################
@@ -445,6 +473,28 @@ fi
 if [[ "$should_install_kde" == true ]]; then
 	arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma plasma-wayland-session egl-wayland kde-applications"
     arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
+    
+    # SDDM settings section
+    echo "[Autologin]" > /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "Relogin=false" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "Session=" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "User=" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "[General]" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "HaltCommand=/usr/bin/systemctl poweroff" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "RebootCommand=/usr/bin/systemctl reboot" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "[Theme]" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "Current=breeze" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "[Users]" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "MaximumUid=60000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    echo "MinimumUid=1000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    
+    # Plasma settings section
+    echo "[Theme]" > /mnt/home/${username}/.config/plasmarc
+    echo "name=breeze-dark" >> /mnt/home/${username}/.config/plasmarc
+    arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/plasmarc"
 fi
 
 
