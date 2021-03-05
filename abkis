@@ -268,7 +268,7 @@ esac
 # Locale dialog #
 #################
 
-localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{print $1 " " $2}' | uniq)
+localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{print $1 " " $2}' | awk -v RS='[,[:space:]]+' '!a[$0]++{printf "%s%s", $0, RT}')
 
 locale=$(dialog --stdout --title "Locale" --clear --menu "Select locale" 20 61 5 ${localelist})
 
@@ -292,7 +292,7 @@ esac
 # Keymap dialog #
 #################
 
-keymaplist=$(find /share/kbd/keymaps -type f -printf "%f %h\n" | sort -V | sed 's/.map.gz//g' | sed 's/\/.*.\///')
+keymaplist=$(find /usr/share/kbd/keymaps -type f -printf "%f %h\n" | sort -V | sed 's/.map.gz//g' | sed 's/\/.*.\///')
 
 keymap=$(dialog --stdout --title "Keymap" --clear --menu "Select keymap" 20 61 5 ${keymaplist})
 
@@ -324,13 +324,13 @@ clear
 
 case $retval in
   0)
-	should_setup_systemd-boot=true
+	should_setup_systemd_boot=true
     ;;
   1)
-	should_setup_systemd-boot=false
+	should_setup_systemd_boot=false
     dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
   255)
-	should_setup_systemd-boot=false
+	should_setup_systemd_boot=false
     dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
 esac
 
@@ -360,7 +360,7 @@ esac
 # Final confirmation dialog #
 #############################
 
-dialog --stdout --title "Confirm" --clear --yesno "Hostname: ${hostname}\nUsername: ${username}\nLocale: ${locale}\nKeymap: ${keymap}\nEfi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}\nSystemd-boot: ${should_setup_systemd-boot}\nKDE: ${should_install_kde}" 10 30
+dialog --stdout --title "Final Confirm" --clear --yesno "Hostname: ${hostname}\nUsername: ${username}\nLocale: ${locale}\nKeymap: ${keymap}\nEfi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}\nSystemd-boot: ${should_setup_systemd_boot}\nKDE: ${should_install_kde}" 10 30
 
 retval=$?
 
