@@ -264,6 +264,121 @@ case $retval in
     exit 1;;
 esac
 
+#################
+# Locale dialog #
+#################
+
+localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{print $1 " " $2}' | uniq)
+
+locale=$(dialog --stdout --title "Locale" --clear --menu "Select locale" 20 61 5 ${localelist})
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+	should_set_locale=true
+    ;;
+  1)
+	should_set_locale=false
+    dialog --stdout --title "Info" --clear --msgbox "No locale has been generated!" 10 30;;
+  255)
+	should_set_locale=false
+    dialog --stdout --title "Info" --clear --msgbox "No locale has been generated!" 10 30;;
+esac
+
+#################
+# Keymap dialog #
+#################
+
+keymaplist=$(find /share/kbd/keymaps -type f -printf "%f %h\n" | sort -V | sed 's/.map.gz//g' | sed 's/\/.*.\///')
+
+keymap=$(dialog --stdout --title "Keymap" --clear --menu "Select keymap" 20 61 5 ${keymaplist})
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+	should_load_keys=true
+    ;;
+  1)
+	should_load_keys=false
+    dialog --stdout --title "Info" --clear --msgbox "No keymap has been selected!" 10 30;;
+  255)
+	should_load_keys=false
+    dialog --stdout --title "Info" --clear --msgbox "No keymap has been selected!" 10 30;;
+esac
+
+#############################
+# Setup systemd-boot dialog #
+#############################
+
+dialog --stdout --title "Boot" --clear --yesno "Setup systemd-boot?" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+	should_setup_systemd-boot=true
+    ;;
+  1)
+	should_setup_systemd-boot=false
+    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
+  255)
+	should_setup_systemd-boot=false
+    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
+esac
+
+##############################
+# Desktop Environment dialog #
+##############################
+
+dialog --stdout --title "Desktop Environment" --clear --yesno "Setup KDE-Plasma?" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+	should_install_kde=true
+    ;;
+  1)
+	should_install_kde=false
+    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
+  255)
+	should_install_kde=false
+    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
+esac
+
+#############################
+# Final confirmation dialog #
+#############################
+
+dialog --stdout --title "Confirm" --clear --yesno "Hostname: ${hostname}\nUsername: ${username}\nLocale: ${locale}\nKeymap: ${keymap}\nEfi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}\nSystemd-boot: ${should_setup_systemd-boot}\nKDE: ${should_install_kde}" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    ;;
+  1)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
 #############################
 # Stop here if just testing #
 #############################
@@ -311,93 +426,29 @@ echo "127.0.0.1    localhost" >> /mnt/etc/hosts
 echo "::1          localhost" >> /mnt/etc/hosts
 echo "127.0.1.1    ${hostname}.localdomain ${hostname}" >> /mnt/etc/hosts
 
-#################
-# Locale dialog #
-#################
+if [[ "$should_load_keys" == true ]]; then
+	echo 'KEYMAP="'"${keymap}"'"' > /mnt/etc/vconsole.conf
+    loadkeys "$keymap"
+fi
 
-localelist=$(grep UTF-8 /mnt/etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{print $1 " " $2}' | uniq)
-
-locale=$(dialog --stdout --title "Locale" --clear --menu "Select locale" 20 61 5 ${localelist})
-
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    echo 'LANG="'"${locale}.UTF-8"'"' > /mnt/etc/locale.conf
+if [[ "$should_set_locale" == true ]]; then
+	echo 'LANG="'"${locale}.UTF-8"'"' > /mnt/etc/locale.conf
     arch-chroot /mnt /bin/bash -c "sed -i 's/#\('${locale}.UTF-8'\)/\1/' /etc/locale.gen"
     arch-chroot /mnt /bin/bash -c "locale-gen"
-    ;;
-  1)
-    dialog --stdout --title "Info" --clear --msgbox "No locale has been generated!" 10 30;;
-  255)
-    dialog --stdout --title "Info" --clear --msgbox "No locale has been generated!" 10 30;;
-esac
+fi
 
-#################
-# Keymap dialog #
-#################
-
-keymaplist=$(find /usr/share/kbd/keymaps -type f -printf "%f %h\n" | sort -V | sed 's/.map.gz//g' | sed 's/\/.*.\///')
-
-keymap=$(dialog --stdout --title "Keymap" --clear --menu "Select keymap" 20 61 5 ${keymaplist})
-
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    echo 'KEYMAP="'"${keymap}"'"' > /mnt/etc/vconsole.conf
-    loadkeys "$keymap"
-    ;;
-  1)
-    dialog --stdout --title "Info" --clear --msgbox "No keymap has been selected!" 10 30;;
-  255)
-    dialog --stdout --title "Info" --clear --msgbox "No keymap has been selected!" 10 30;;
-esac
-
-#############################
-# Setup systemd-boot dialog #
-#############################
-
-dialog --stdout --title "Boot" --clear --yesno "Setup systemd-boot?" 10 30
-
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    arch-chroot /mnt /bin/bash -c "bootctl install"
+if [[ "$should_setup_systemd-boot" == true ]]; then
+	arch-chroot /mnt /bin/bash -c "bootctl install"
     printf "%s\n" "title Arch Linux" "linux /vmlinuz-linux" "initrd /initramfs-linux.img" "options root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
-    ;;
-  1)
-    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
-  255)
-    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
-esac
+fi
 
-##############################
-# Desktop Environment dialog #
-##############################
-
-dialog --stdout --title "Desktop Environment" --clear --yesno "Setup KDE-Plasma?" 10 30
-
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma plasma-wayland-session egl-wayland kde-applications"
+if [[ "$should_install_kde" == true ]]; then
+	arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma plasma-wayland-session egl-wayland kde-applications"
     arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
-    ;;
-  1)
-    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
-  255)
-    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
-esac
+fi
+
+
+
+
 
 dialog --stdout --title "The End" --clear --msgbox "Your system has now been set up and is ready for use!\nThe root password is the same as your user, so consider changing it for extra security." 10 40
