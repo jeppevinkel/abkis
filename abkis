@@ -15,6 +15,10 @@ function join_by { local d=$1; shift; local f=$1; shift; printf %s "$f" "${@/#/$
 
 
 
+
+# echo $localelist
+
+
 # exit 1
 
 
@@ -287,7 +291,7 @@ esac
 # Locale dialog #
 #################
 
-localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{print $1 " " $2 " OFF"}')
+localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{if (NR == 1) {print $1 " " $2 " ON"} else {print $1 " " $2 " OFF"}}')
 
 locales=($(dialog --stdout --title "Locale" --checklist "Select locales" 20 61 5 ${localelist}))
 
@@ -314,12 +318,12 @@ esac
 INDEX=1
 for _locale in ${locales[@]}
 do
-    locale_options="$locale_options $INDEX $_locale OFF"
+    locale_options="$locale_options $INDEX $_locale"
     echo "$locale_options"
     let INDEX=${INDEX}+1
 done
 
-main_locale=$(dialog --stdout --title "Locale" --radiolist "Select main locale" 20 61 5 ${locale_options})
+main_locale=$(dialog --stdout --title "Locale" --menu "Select main locale" 20 61 5 ${locale_options})
 
 retval=$?
 
@@ -403,6 +407,34 @@ case $retval in
 	should_install_kde=false
     dialog --stdout --title "Info" --msgbox "KDE-Plasma will not be set up" 10 30;
 esac
+
+######################################
+# Desktop Environment Wayland dialog #
+######################################
+
+wayland_string=""
+
+if [[ "$should_install_kde" == true ]]; then
+
+dialog --stdout --title "Desktop Environment" --yesno "Install wayland session?" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+	wayland_string="plasma-wayland-session egl-wayland"
+    ;;
+  1)
+	wayland_string=""
+    dialog --stdout --title "Info" --msgbox "KDE-Plasma will not be set up" 10 30;;
+  255)
+	wayland_string=""
+    dialog --stdout --title "Info" --msgbox "KDE-Plasma will not be set up" 10 30;
+esac
+
+fi
 
 #############################
 # Final confirmation dialog #
@@ -499,7 +531,7 @@ if [[ "$should_setup_systemd_boot" == true ]]; then
 fi
 
 if [[ "$should_install_kde" == true ]]; then
-	arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma plasma-wayland-session egl-wayland kde-applications"
+	arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} kde-applications packagekit-qt5"
     arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
     
     mkdir /mnt/etc/sddm.conf.d
