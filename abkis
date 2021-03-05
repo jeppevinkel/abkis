@@ -558,7 +558,15 @@ if [[ "$should_install_kde" == true ]]; then
     # Plasma settings section
     echo "[Theme]" > /mnt/home/${username}/.config/plasmarc
     echo "name=breeze-dark" >> /mnt/home/${username}/.config/plasmarc
+    arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config"
     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/plasmarc"
+    
+    curl -L https://dllb2.pling.com/api/files/download/j/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE2MTIxMzQ0OTMiLCJ1IjpudWxsLCJsdCI6ImRvd25sb2FkIiwicyI6IjFkMTJkNDg3NGFiZmI0YjdlYWFjZDRlY2Q3MTFjYzUzNjAyYzlkMTE3NWU0NGVkNGIyYzc1YTk3NzM1M2NjZmVjZWE3YjBjMmM0NjQ2M2IxNGRiYjU3OTQ4YTIzOWQxZmEwZDMyN2M5YmM4MTVlYTNiYTZkZmM5Mjc0Y2QyZjNkIiwidCI6MTYxNDk4OTM5MCwic3RmcCI6IjQzNGRiNzkxOTM5N2YwNmZhNTA0ZTNkMjUyZTQ2N2U0Iiwic3RpcCI6IjE4NS4xMzYuMTE2LjE4OCJ9.T_IzT9QXL7T6eezrT-fTBRCSt4mt8NUdDBPLpgZtl_4/YaplassArchLinux.tar.gz | tar zx -C /usr/share/plasma/look-and-feel
+    
+    touch /mnt/home/${username}/.config/ksplashrc
+    echo "[KSplash]" > /mnt/home/${username}/.config/ksplashrc
+    echo "Theme=YaplassArchLinux" >> /mnt/home/${username}/.config/ksplashrc
+    arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/ksplashrc"
 fi
 
 
