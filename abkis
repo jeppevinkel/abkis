@@ -502,6 +502,8 @@ if [[ "$should_install_kde" == true ]]; then
 	arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma plasma-wayland-session egl-wayland kde-applications"
     arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
     
+    mkdir /mnt/etc/sddm.conf.d
+    touch /mnt/etc/sddm.conf.d/kde_settings.conf
     # SDDM settings section
     echo "[Autologin]" > /mnt/etc/sddm.conf.d/kde_settings.conf
     echo "Relogin=false" >> /mnt/etc/sddm.conf.d/kde_settings.conf
@@ -519,6 +521,8 @@ if [[ "$should_install_kde" == true ]]; then
     echo "MaximumUid=60000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
     echo "MinimumUid=1000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
     
+    mkdir /mnt/home/${username}/.config
+    touch /mnt/home/${username}/.config/plasmarc
     # Plasma settings section
     echo "[Theme]" > /mnt/home/${username}/.config/plasmarc
     echo "name=breeze-dark" >> /mnt/home/${username}/.config/plasmarc
