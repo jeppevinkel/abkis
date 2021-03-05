@@ -7,7 +7,7 @@ pacman -S --noconfirm dialog
 # Confirmation dialog #
 #######################
 
-dialog --stdout --title "Confirm" --clear --yesno "Have you set up the partition table?" 10 30
+dialog --stdout --title "Confirm" --yesno "Have you set up the partition table?" 10 30
 
 retval=$?
 
@@ -17,11 +17,11 @@ case $retval in
   0)
     ;;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "I expect the following partitions\n\nEfi:  FAT32\nRoot: BTRFS\nSwap: SWAP" 10 40;
+    dialog --stdout --title "Info" --msgbox "I expect the following partitions\n\nEfi:  FAT32\nRoot: BTRFS\nSwap: SWAP" 10 40;
     clear;
     exit 1;;
   255)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
 esac
@@ -30,7 +30,7 @@ esac
 # Hostname dialog #
 ###################
 
-hostname=$(dialog --stdout --title "Hostname" --clear --inputbox "Enter hostname" 0 0)
+hostname=$(dialog --stdout --title "Hostname" --inputbox "Enter hostname" 0 0)
 
 retval=$?
 
@@ -39,17 +39,17 @@ clear
 case $retval in
   0)
     if [ -z "$hostname" ]; then
-        dialog --stdout --title "Error" --clear --msgbox "Hostname cannot be empty" 10 30;
+        dialog --stdout --title "Error" --msgbox "Hostname cannot be empty" 10 30;
         clear;
         exit 1;
     fi
     echo "Input string is ${hostname}";;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
   255)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
 esac
@@ -58,7 +58,7 @@ esac
 # Username dialog #
 ###################
 
-username=$(dialog --stdout --title "Username" --clear --inputbox "Enter username" 0 0)
+username=$(dialog --stdout --title "Username" --inputbox "Enter username" 0 0)
 
 retval=$?
 
@@ -67,17 +67,17 @@ clear
 case $retval in
   0)
     if [ -z "$username" ]; then
-        dialog --stdout --title "Error" --clear --msgbox "Username cannot be empty" 10 30;
+        dialog --stdout --title "Error" --msgbox "Username cannot be empty" 10 30;
         clear;
         exit 1;
     fi
     echo "Input string is ${username}";;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
   255)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
 esac
@@ -86,7 +86,7 @@ esac
 # Password dialog #
 ###################
 
-password=$(dialog --stdout --title "Password" --clear --passwordbox "Enter password" 0 0)
+password=$(dialog --stdout --title "Password" --passwordbox "Enter password" 0 0)
 
 retval=$?
 
@@ -95,22 +95,22 @@ clear
 case $retval in
   0)
     if [ -z "$password" ]; then
-        dialog --stdout --title "Error" --clear --msgbox "Password cannot be empty" 10 30;
+        dialog --stdout --title "Error" --msgbox "Password cannot be empty" 10 30;
         clear;
         exit 1;
     fi;;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
   255)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
 esac
 
 
-password_repeat=$(dialog --stdout --title "Password" --clear --passwordbox "Repeat password" 0 0)
+password_repeat=$(dialog --stdout --title "Password" --passwordbox "Repeat password" 0 0)
 
 retval=$?
 
@@ -119,21 +119,21 @@ clear
 case $retval in
   0)
     if [ -z "$password_repeat" ]; then
-        dialog --stdout --title "Error" --clear --msgbox "Password cannot be empty" 10 30;
+        dialog --stdout --title "Error" --msgbox "Password cannot be empty" 10 30;
         clear;
         exit 1;
     elif [ "$password" != "$password_repeat" ]; then
-        dialog --stdout --title "Error" --clear --msgbox "Passwords did not match" 10 30;
+        dialog --stdout --title "Error" --msgbox "Passwords did not match" 10 30;
         clear;
         exit 1;
     fi
     echo "Input string is ${password_repeat}";;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
   255)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
 esac
@@ -142,7 +142,7 @@ esac
 # Confirmation dialog #
 #######################
 
-dialog --stdout --title "Confirm" --clear --yesno "Hostname: ${hostname}\nUsername: ${username}" 10 30
+dialog --stdout --title "Confirm" --yesno "Hostname: ${hostname}\nUsername: ${username}" 10 30
 
 retval=$?
 
@@ -152,11 +152,11 @@ case $retval in
   0)
     ;;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
   255)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
 esac
@@ -176,17 +176,17 @@ clear
 case $retval in
   0)
     if [ $(lsblk -n -o fstype ${efi_partition}) != "vfat" ]; then
-        dialog --stdout --title "Error" --clear --msgbox "The selected partition isn't a FAT filesystem" 10 30;
+        dialog --stdout --title "Error" --msgbox "The selected partition isn't a FAT filesystem" 10 30;
         clear;
         exit 1;
     fi
     ;;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
   255)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
 esac
@@ -201,17 +201,17 @@ clear
 case $retval in
   0)
     if [ $(lsblk -n -o fstype ${root_partition}) != "btrfs" ]; then
-        dialog --stdout --title "Error" --clear --msgbox "The selected partition isn't a BTRFS filesystem" 10 30;
+        dialog --stdout --title "Error" --msgbox "The selected partition isn't a BTRFS filesystem" 10 30;
         clear;
         exit 1;
     fi
     ;;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
   255)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
 esac
@@ -226,17 +226,17 @@ clear
 case $retval in
   0)
     if [ $(lsblk -n -o fstype ${swap_partition}) != "swap" ]; then
-        dialog --stdout --title "Error" --clear --msgbox "The selected partition isn't a SWAP filesystem" 10 30;
+        dialog --stdout --title "Error" --msgbox "The selected partition isn't a SWAP filesystem" 10 30;
         clear;
         exit 1;
     fi
     ;;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
   255)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
 esac
@@ -245,7 +245,7 @@ esac
 # Confirmation dialog #
 #######################
 
-dialog --stdout --title "Confirm" --clear --yesno "Efi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}" 10 30
+dialog --stdout --title "Confirm" --yesno "Efi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}" 10 30
 
 retval=$?
 
@@ -255,11 +255,11 @@ case $retval in
   0)
     ;;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
   255)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
 esac
@@ -270,7 +270,7 @@ esac
 
 localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{print $1 " " $2}' | awk -v RS='[,[:space:]]+' '!a[$0]++{printf "%s%s", $0, RT}')
 
-locale=$(dialog --stdout --title "Locale" --clear --menu "Select locale" 20 61 5 ${localelist})
+locale=$(dialog --stdout --title "Locale" --menu "Select locale" 20 61 5 ${localelist})
 
 retval=$?
 
@@ -282,10 +282,10 @@ case $retval in
     ;;
   1)
 	should_set_locale=false
-    dialog --stdout --title "Info" --clear --msgbox "No locale has been generated!" 10 30;;
+    dialog --stdout --title "Info" --msgbox "No locale has been generated!" 10 30;;
   255)
 	should_set_locale=false
-    dialog --stdout --title "Info" --clear --msgbox "No locale has been generated!" 10 30;;
+    dialog --stdout --title "Info" --msgbox "No locale has been generated!" 10 30;;
 esac
 
 #################
@@ -294,7 +294,7 @@ esac
 
 keymaplist=$(find /usr/share/kbd/keymaps -type f -printf "%f %h\n" | sort -V | sed 's/.map.gz//g' | sed 's/\/.*.\///')
 
-keymap=$(dialog --stdout --title "Keymap" --clear --menu "Select keymap" 20 61 5 ${keymaplist})
+keymap=$(dialog --stdout --title "Keymap" --menu "Select keymap" 20 61 5 ${keymaplist})
 
 retval=$?
 
@@ -306,17 +306,17 @@ case $retval in
     ;;
   1)
 	should_load_keys=false
-    dialog --stdout --title "Info" --clear --msgbox "No keymap has been selected!" 10 30;;
+    dialog --stdout --title "Info" --msgbox "No keymap has been selected!" 10 30;;
   255)
 	should_load_keys=false
-    dialog --stdout --title "Info" --clear --msgbox "No keymap has been selected!" 10 30;;
+    dialog --stdout --title "Info" --msgbox "No keymap has been selected!" 10 30;;
 esac
 
 #############################
 # Setup systemd-boot dialog #
 #############################
 
-dialog --stdout --title "Boot" --clear --yesno "Setup systemd-boot?" 10 30
+dialog --stdout --title "Boot" --yesno "Setup systemd-boot?" 10 30
 
 retval=$?
 
@@ -328,17 +328,17 @@ case $retval in
     ;;
   1)
 	should_setup_systemd_boot=false
-    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
+    dialog --stdout --title "Info" --msgbox "Systemd-boot will not be set up" 10 30;;
   255)
 	should_setup_systemd_boot=false
-    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
+    dialog --stdout --title "Info" --msgbox "Systemd-boot will not be set up" 10 30;
 esac
 
 ##############################
 # Desktop Environment dialog #
 ##############################
 
-dialog --stdout --title "Desktop Environment" --clear --yesno "Setup KDE-Plasma?" 10 30
+dialog --stdout --title "Desktop Environment" --yesno "Setup KDE-Plasma?" 10 30
 
 retval=$?
 
@@ -350,17 +350,17 @@ case $retval in
     ;;
   1)
 	should_install_kde=false
-    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;;
+    dialog --stdout --title "Info" --msgbox "KDE-Plasma will not be set up" 10 30;;
   255)
 	should_install_kde=false
-    dialog --stdout --title "Info" --clear --msgbox "Systemd-boot has not been set up" 10 30;
+    dialog --stdout --title "Info" --msgbox "KDE-Plasma will not be set up" 10 30;
 esac
 
 #############################
 # Final confirmation dialog #
 #############################
 
-dialog --stdout --title "Final Confirm" --clear --yesno "Hostname: ${hostname}\nUsername: ${username}\nLocale: ${locale}\nKeymap: ${keymap}\nEfi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}\nSystemd-boot: ${should_setup_systemd_boot}\nKDE: ${should_install_kde}" 10 30
+dialog --stdout --title "Final Confirm" --yesno "Hostname:     ${hostname}\nUsername:     ${username}\nLocale:       ${locale}\nKeymap:       ${keymap}\nEfi:          ${efi_partition}\nRoot:         ${root_partition}\nSwap:         ${swap_partition}\nSystemd-boot: ${should_setup_systemd_boot}\nKDE:          ${should_install_kde}" 20 40
 
 retval=$?
 
@@ -370,11 +370,11 @@ case $retval in
   0)
     ;;
   1)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
   255)
-    dialog --stdout --title "Info" --clear --msgbox "Installation has been cancelled" 10 30;
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
     clear;
     exit 1;;
 esac
@@ -451,4 +451,5 @@ fi
 
 
 
-dialog --stdout --title "The End" --clear --msgbox "Your system has now been set up and is ready for use!\nThe root password is the same as your user, so consider changing it for extra security." 10 40
+dialog --stdout --title "The End" --msgbox "Your system has now been set up and is ready for use!\nThe root password is the same as your user, so consider changing it for extra security." 10 40
+clear
