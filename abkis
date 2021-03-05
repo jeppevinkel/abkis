@@ -437,7 +437,7 @@ if [[ "$should_set_locale" == true ]]; then
     arch-chroot /mnt /bin/bash -c "locale-gen"
 fi
 
-if [[ "$should_setup_systemd-boot" == true ]]; then
+if [[ "$should_setup_systemd_boot" == true ]]; then
 	arch-chroot /mnt /bin/bash -c "bootctl install"
     printf "%s\n" "title Arch Linux" "linux /vmlinuz-linux" "initrd /initramfs-linux.img" "options root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
 fi
