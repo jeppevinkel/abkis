@@ -553,6 +553,12 @@ if [[ "$should_install_kde" == true ]]; then
     echo "MaximumUid=60000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
     echo "MinimumUid=1000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
     
+    mkdir /mnt/home/"${username}"/Documents
+    mkdir /mnt/home/"${username}"/Downloads
+    mkdir /mnt/home/"${username}"/Videos
+    mkdir /mnt/home/"${username}"/Pictures
+    mkdir /mnt/home/"${username}"/Music
+    
     mkdir /mnt/home/"${username}"/.config
     touch /mnt/home/"${username}"/.config/plasmarc
     # Plasma settings section
@@ -567,6 +573,8 @@ if [[ "$should_install_kde" == true ]]; then
     echo "[KSplash]" > /mnt/home/"${username}"/.config/ksplashrc
     echo "Theme=YaplassArchLinux" >> /mnt/home/"${username}"/.config/ksplashrc
     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/ksplashrc"
+    
+    arch-chroot /mnt /bin/bash -c "chown -R "${username}:${username} /home/${username}"
 fi
 
 
