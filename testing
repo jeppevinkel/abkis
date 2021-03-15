@@ -190,7 +190,7 @@ esac
 
 partitionlist=$(lsblk -plnx size -I 8 -o name,size,type | grep -Ev "boot|rpmb|loop|disk" | tac | awk '{print $1 " " $2}')
 
-efi_partition=$(dialog --stdout --title "Partitions" --menu "Select efi partition" 0 0 0 "${partitionlist}")
+efi_partition=$(dialog --stdout --title "Partitions" --menu "Select efi partition" 0 0 0 ${partitionlist})
 
 retval=$?
 
@@ -215,7 +215,7 @@ case $retval in
 esac
 
 
-root_partition=$(dialog --stdout --title "Partitions" --menu "Select root partition" 0 0 0 "${partitionlist}")
+root_partition=$(dialog --stdout --title "Partitions" --menu "Select root partition" 0 0 0 ${partitionlist})
 
 retval=$?
 
@@ -240,7 +240,7 @@ case $retval in
 esac
 
 
-swap_partition=$(dialog --stdout --title "Partitions" --menu "Select swap partition" 0 0 0 "${partitionlist}")
+swap_partition=$(dialog --stdout --title "Partitions" --menu "Select swap partition" 0 0 0 ${partitionlist})
 
 retval=$?
 
@@ -293,7 +293,7 @@ esac
 
 localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{if (NR == 1) {print $1 " " $2 " ON"} else {print $1 " " $2 " OFF"}}')
 
-locales=($(dialog --stdout --title "Locale" --checklist "Select locales" 20 61 5 "${localelist}"))
+locales=($(dialog --stdout --title "Locale" --checklist "Select locales" 20 61 5 ${localelist}))
 
 retval=$?
 
@@ -323,7 +323,7 @@ do
     ((INDEX=INDEX+1))
 done
 
-main_locale=$(dialog --stdout --title "Locale" --menu "Select main locale" 20 61 5 "${locale_options}")
+main_locale=$(dialog --stdout --title "Locale" --menu "Select main locale" 20 61 5 ${locale_options})
 
 retval=$?
 
@@ -346,7 +346,7 @@ esac
 
 keymaplist=$(find /usr/share/kbd/keymaps -type f -printf "%f %h\n" | sort -V | sed 's/.map.gz//g' | sed 's/\/.*.\///')
 
-keymap=$(dialog --stdout --title "Keymap" --menu "Select keymap" 20 61 5 "${keymaplist}")
+keymap=$(dialog --stdout --title "Keymap" --menu "Select keymap" 20 61 5 ${keymaplist})
 
 retval=$?
 
@@ -487,7 +487,7 @@ mount -o noatime,compress=lzo,space_cache,subvol=@home "$root_partition" /mnt/ho
 
 mount "$efi_partition" /mnt/boot
 
-pacstrap /mnt base base-devel linux linux-firmware micro sudo intel-ucode networkmanager
+pacstrap /mnt base base-devel linux linux-firmware micro sudo intel-ucode networkmanager xclip
 
 genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -531,7 +531,7 @@ if [[ "$should_setup_systemd_boot" == true ]]; then
 fi
 
 if [[ "$should_install_kde" == true ]]; then
-	arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} kde-applications packagekit-qt5"
+	arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} kde-applications packagekit-qt5 firefox --ignore konqueror"
     arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
     
     mkdir /mnt/etc/sddm.conf.d
@@ -562,10 +562,14 @@ if [[ "$should_install_kde" == true ]]; then
     mkdir /mnt/home/"${username}"/.config
     touch /mnt/home/"${username}"/.config/plasmarc
     # Plasma settings section
-    echo "[Theme]" > /mnt/home/"${username}"/.config/plasmarc
-    echo "name=breeze-dark" >> /mnt/home/"${username}"/.config/plasmarc
-    arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config"
-    arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/plasmarc"
+#     echo "[Theme]" > /mnt/home/"${username}"/.config/plasmarc
+#     echo "name=breeze-dark" >> /mnt/home/"${username}"/.config/plasmarc
+#     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config"
+#     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/plasmarc"
+    arch-chroot /mnt /bin/bash -c "kwriteconfig5 --file plasmarc --group Theme --key name breeze-dark"
+    arch-chroot /mnt /bin/bash -c "lookandfeeltool -a org.kde.breezedark.desktop"
+    
+    arch-chroot /mnt /bin/bash -c "kwriteconfig5 --file kxkbrc --group Layout --key LayoutList $(echo "${keymap}" | cut -f1 -d"-")"
     
     touch /mnt/home/"${username}"/.config/plasma-localerc
     echo "[Formats]" > /mnt/home/"${username}"/.config/plasma-localerc
@@ -579,7 +583,7 @@ if [[ "$should_install_kde" == true ]]; then
 #     echo "Theme=YaplassArchLinux" >> /mnt/home/"${username}"/.config/ksplashrc
 #     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/ksplashrc"
     
-    arch-chroot /mnt /bin/bash -c "chown -R "${username}:${username} /home/${username}"
+    arch-chroot /mnt /bin/bash -c "chown -R ${username}:${username} /home/${username}"
 fi
 
 
