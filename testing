@@ -567,9 +567,9 @@ if [[ "$should_install_kde" == true ]]; then
 #     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config"
 #     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/plasmarc"
     arch-chroot /mnt /bin/bash -c "kwriteconfig5 --file /home/${username}/.config/plasmarc --group Theme --key name breeze-dark"
-    arch-chroot /mnt /bin/bash -c "runuser -c -u ${username} \"lookandfeeltool -a org.kde.breezedark.desktop\""
+    arch-chroot /mnt /bin/bash -c "runuser -c -u ${username} lookandfeeltool -a org.kde.breezedark.desktop"
     
-    arch-chroot /mnt /bin/bash -c "kwriteconfig5 --file /home/${username}/.config/kxkbrc --group Layout --key LayoutList $(echo \"${keymap}\" | cut -f1 -d\"-\")"
+    arch-chroot /mnt /bin/bash -c "kwriteconfig5 --file /home/${username}/.config/kxkbrc --group Layout --key LayoutList $(echo "${keymap}" | cut -f1 -d\"-\")"
     
     touch /mnt/home/"${username}"/.config/plasma-localerc
     echo "[Formats]" > /mnt/home/"${username}"/.config/plasma-localerc
