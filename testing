@@ -24,7 +24,7 @@ function join_by { local d=$1; shift; local f=$1; shift; printf %s "$f" "${@/#/$
 
 
 pacman -Sy
-pacman -S --noconfirm dialog
+pacman -S --noconfirm dialog glibc
 
 #######################
 # Confirmation dialog #
@@ -531,7 +531,7 @@ if [[ "$should_setup_systemd_boot" == true ]]; then
 fi
 
 if [[ "$should_install_kde" == true ]]; then
-	arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} kde-applications packagekit-qt5 firefox --ignore konqueror"
+	arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} kde-applications packagekit-qt5 firefox"
     arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
     
     mkdir /mnt/etc/sddm.conf.d
