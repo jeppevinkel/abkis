@@ -496,7 +496,7 @@ arch-chroot /mnt /bin/bash -c "useradd -m -G wheel ${username}"
 arch-chroot /mnt /bin/bash -c 'echo "'"${username}:${password}"'" | chpasswd'
 arch-chroot /mnt /bin/bash -c 'echo "'"root:${password}"'" | chpasswd'
 arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
-sed -i '/%wheel ALL=(ALL) ALL/s/^#//' /mnt/etc/sudoers
+sed -i "/%wheel ALL=(ALL) ALL/s/^#//" /mnt/etc/sudoers
 
 echo "${hostname}" > /mnt/etc/hostname
 
