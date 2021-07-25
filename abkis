@@ -14,8 +14,6 @@ function join_by { local d=$1; shift; local f=$1; shift; printf %s "$f" "${@/#/$
 # done
 
 
-
-
 # echo $localelist
 
 
@@ -23,8 +21,8 @@ function join_by { local d=$1; shift; local f=$1; shift; printf %s "$f" "${@/#/$
 
 
 
-pacman -Sy
-pacman -S --noconfirm dialog
+pacman -Syu
+pacman -S --noconfirm dialog glibc
 
 #######################
 # Confirmation dialog #
@@ -198,7 +196,7 @@ clear
 
 case $retval in
   0)
-    if [ $(lsblk -n -o fstype ${efi_partition}) != "vfat" ]; then
+    if [ "$(lsblk -n -o fstype "${efi_partition}")" != "vfat" ]; then
         dialog --stdout --title "Error" --msgbox "The selected partition isn't a FAT filesystem" 10 30;
         clear;
         exit 1;
@@ -223,7 +221,7 @@ clear
 
 case $retval in
   0)
-    if [ $(lsblk -n -o fstype ${root_partition}) != "btrfs" ]; then
+    if [ "$(lsblk -n -o fstype "${root_partition}")" != "btrfs" ]; then
         dialog --stdout --title "Error" --msgbox "The selected partition isn't a BTRFS filesystem" 10 30;
         clear;
         exit 1;
@@ -248,7 +246,7 @@ clear
 
 case $retval in
   0)
-    if [ $(lsblk -n -o fstype ${swap_partition}) != "swap" ]; then
+    if [ "$(lsblk -n -o fstype "${swap_partition}")" != "swap" ]; then
         dialog --stdout --title "Error" --msgbox "The selected partition isn't a SWAP filesystem" 10 30;
         clear;
         exit 1;
@@ -301,13 +299,13 @@ clear
 
 case $retval in
   0)
-	should_set_locale=true
+  should_set_locale=true
     ;;
   1)
-	should_set_locale=false
+  should_set_locale=false
     dialog --stdout --title "Info" --msgbox "No locale has been generated!" 10 30;;
   255)
-	should_set_locale=false
+  should_set_locale=false
     dialog --stdout --title "Info" --msgbox "No locale has been generated!" 10 30;;
 esac
 
@@ -316,11 +314,11 @@ esac
 #################
 
 INDEX=1
-for _locale in ${locales[@]}
+for _locale in "${locales[@]}"
 do
     locale_options="$locale_options $INDEX $_locale"
     echo "$locale_options"
-    let INDEX=${INDEX}+1
+    ((INDEX=INDEX+1))
 done
 
 main_locale=$(dialog --stdout --title "Locale" --menu "Select main locale" 20 61 5 ${locale_options})
@@ -329,14 +327,14 @@ retval=$?
 
 case $retval in
   0)
-	should_set_main_locale=true
-	main_locale=${locales[$main_locale-1]}
+  should_set_main_locale=true
+  main_locale=${locales[$main_locale-1]}
     ;;
   1)
-	should_set_main_locale=false
+  should_set_main_locale=false
     dialog --stdout --title "Info" --msgbox "Main locale has not been set!" 10 30;;
   255)
-	should_set_main_locale=false
+  should_set_main_locale=false
     dialog --stdout --title "Info" --msgbox "Main locale has not been set!" 10 30;;
 esac
 
@@ -354,13 +352,13 @@ clear
 
 case $retval in
   0)
-	should_load_keys=true
+  should_load_keys=true
     ;;
   1)
-	should_load_keys=false
+  should_load_keys=false
     dialog --stdout --title "Info" --msgbox "No keymap has been selected!" 10 30;;
   255)
-	should_load_keys=false
+  should_load_keys=false
     dialog --stdout --title "Info" --msgbox "No keymap has been selected!" 10 30;;
 esac
 
@@ -376,13 +374,13 @@ clear
 
 case $retval in
   0)
-	should_setup_systemd_boot=true
+  should_setup_systemd_boot=true
     ;;
   1)
-	should_setup_systemd_boot=false
+  should_setup_systemd_boot=false
     dialog --stdout --title "Info" --msgbox "Systemd-boot will not be set up" 10 30;;
   255)
-	should_setup_systemd_boot=false
+  should_setup_systemd_boot=false
     dialog --stdout --title "Info" --msgbox "Systemd-boot will not be set up" 10 30;
 esac
 
@@ -398,13 +396,13 @@ clear
 
 case $retval in
   0)
-	should_install_kde=true
+  should_install_kde=true
     ;;
   1)
-	should_install_kde=false
+  should_install_kde=false
     dialog --stdout --title "Info" --msgbox "KDE-Plasma will not be set up" 10 30;;
   255)
-	should_install_kde=false
+  should_install_kde=false
     dialog --stdout --title "Info" --msgbox "KDE-Plasma will not be set up" 10 30;
 esac
 
@@ -424,13 +422,13 @@ clear
 
 case $retval in
   0)
-	wayland_string="plasma-wayland-session egl-wayland"
+  wayland_string="plasma-wayland-session egl-wayland"
     ;;
   1)
-	wayland_string=""
+  wayland_string=""
     dialog --stdout --title "Info" --msgbox "Wayland session will not be set up" 10 30;;
   255)
-	wayland_string=""
+  wayland_string=""
     dialog --stdout --title "Info" --msgbox "Wayland session will not be set up" 10 30;
 esac
 
@@ -440,7 +438,7 @@ fi
 # Final confirmation dialog #
 #############################
 
-dialog --stdout --title "Final Confirm" --yesno "Hostname:     ${hostname}\nUsername:     ${username}\nLocales:      $(join_by ", " ${locales[@]})\nMain locale:  ${main_locale}\nKeymap:       ${keymap}\nEfi:          ${efi_partition}\nRoot:         ${root_partition}\nSwap:         ${swap_partition}\nSystemd-boot: ${should_setup_systemd_boot}\nKDE:          ${should_install_kde}" 20 40
+dialog --stdout --title "Final Confirm" --yesno "Hostname:     ${hostname}\nUsername:     ${username}\nLocales:      $(join_by ", " "${locales[@]}")\nMain locale:  ${main_locale}\nKeymap:       ${keymap}\nEfi:          ${efi_partition}\nRoot:         ${root_partition}\nSwap:         ${swap_partition}\nSystemd-boot: ${should_setup_systemd_boot}\nKDE:          ${should_install_kde}" 20 40
 
 retval=$?
 
@@ -472,22 +470,22 @@ fi
 # Atumatic section #
 ####################
 
-mkswap $swap_partition
+mkswap "$swap_partition"
 
-mount $root_partition /mnt
+mount "$root_partition" /mnt
 
 btrfs subvolume create /mnt/@
 btrfs subvolume create /mnt/@home
 
 umount /mnt
 
-mount -o noatime,compress=lzo,space_cache,subvol=@ $root_partition /mnt
+mount -o noatime,compress=lzo,space_cache,subvol=@ "$root_partition" /mnt
 mkdir /mnt/{boot,home}
-mount -o noatime,compress=lzo,space_cache,subvol=@home $root_partition /mnt/home
+mount -o noatime,compress=lzo,space_cache,subvol=@home "$root_partition" /mnt/home
 
-mount $efi_partition /mnt/boot
+mount "$efi_partition" /mnt/boot
 
-pacstrap /mnt base base-devel linux linux-firmware micro sudo intel-ucode networkmanager
+pacstrap /mnt base base-devel linux linux-firmware micro sudo intel-ucode networkmanager xclip
 
 genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -507,13 +505,13 @@ echo "::1          localhost" >> /mnt/etc/hosts
 echo "127.0.1.1    ${hostname}.localdomain ${hostname}" >> /mnt/etc/hosts
 
 if [[ "$should_load_keys" == true ]]; then
-	echo 'KEYMAP="'"${keymap}"'"' > /mnt/etc/vconsole.conf
+  echo 'KEYMAP="'"${keymap}"'"' > /mnt/etc/vconsole.conf
     loadkeys "$keymap"
 fi
 
 if [[ "$should_set_locale" == true ]]; then
 
-    for locale in ${locales[@]}
+    for locale in "${locales[@]}"
     do
         arch-chroot /mnt /bin/bash -c "sed -i 's/#\('${locale}.UTF-8'\)/\1/' /etc/locale.gen"
     done
@@ -522,16 +520,16 @@ if [[ "$should_set_locale" == true ]]; then
 fi
 
 if [[ "$should_set_main_locale" == true ]]; then
-	echo 'LANG="'"${main_locale}.UTF-8"'"' > /mnt/etc/locale.conf
+  echo 'LANG="'"${main_locale}.UTF-8"'"' > /mnt/etc/locale.conf
 fi
 
 if [[ "$should_setup_systemd_boot" == true ]]; then
-	arch-chroot /mnt /bin/bash -c "bootctl install"
+  arch-chroot /mnt /bin/bash -c "bootctl install"
     printf "%s\n" "title Arch Linux" "linux /vmlinuz-linux" "initrd /initramfs-linux.img" "options root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
 fi
 
 if [[ "$should_install_kde" == true ]]; then
-	arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} kde-applications packagekit-qt5"
+  arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} dolphin konsole packagekit-qt5 firefox"
     arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
     
     mkdir /mnt/etc/sddm.conf.d
@@ -553,20 +551,37 @@ if [[ "$should_install_kde" == true ]]; then
     echo "MaximumUid=60000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
     echo "MinimumUid=1000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
     
-    mkdir /mnt/home/${username}/.config
-    touch /mnt/home/${username}/.config/plasmarc
+    mkdir /mnt/home/"${username}"/Documents
+    mkdir /mnt/home/"${username}"/Downloads
+    mkdir /mnt/home/"${username}"/Videos
+    mkdir /mnt/home/"${username}"/Pictures
+    mkdir /mnt/home/"${username}"/Music
+    
+    mkdir /mnt/home/"${username}"/.config
+    touch /mnt/home/"${username}"/.config/plasmarc
     # Plasma settings section
-    echo "[Theme]" > /mnt/home/${username}/.config/plasmarc
-    echo "name=breeze-dark" >> /mnt/home/${username}/.config/plasmarc
-    arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config"
-    arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/plasmarc"
+#     echo "[Theme]" > /mnt/home/"${username}"/.config/plasmarc
+#     echo "name=breeze-dark" >> /mnt/home/"${username}"/.config/plasmarc
+#     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config"
+#     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/plasmarc"
+    arch-chroot /mnt /bin/bash -c "kwriteconfig5 --file /home/${username}/.config/plasmarc --group Theme --key name breeze-dark"
+    arch-chroot /mnt /bin/bash -c "runuser -c -u ${username} \"lookandfeeltool -a org.kde.breezedark.desktop\""
     
-    curl -L https://dllb2.pling.com/api/files/download/j/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE2MTIxMzQ0OTMiLCJ1IjpudWxsLCJsdCI6ImRvd25sb2FkIiwicyI6IjFkMTJkNDg3NGFiZmI0YjdlYWFjZDRlY2Q3MTFjYzUzNjAyYzlkMTE3NWU0NGVkNGIyYzc1YTk3NzM1M2NjZmVjZWE3YjBjMmM0NjQ2M2IxNGRiYjU3OTQ4YTIzOWQxZmEwZDMyN2M5YmM4MTVlYTNiYTZkZmM5Mjc0Y2QyZjNkIiwidCI6MTYxNDk4OTM5MCwic3RmcCI6IjQzNGRiNzkxOTM5N2YwNmZhNTA0ZTNkMjUyZTQ2N2U0Iiwic3RpcCI6IjE4NS4xMzYuMTE2LjE4OCJ9.T_IzT9QXL7T6eezrT-fTBRCSt4mt8NUdDBPLpgZtl_4/YaplassArchLinux.tar.gz | tar zx -C /usr/share/plasma/look-and-feel
+    arch-chroot /mnt /bin/bash -c "kwriteconfig5 --file /home/${username}/.config/kxkbrc --group Layout --key LayoutList $(echo "${keymap}" | cut -f1 -d\"-\")"
     
-    touch /mnt/home/${username}/.config/ksplashrc
-    echo "[KSplash]" > /mnt/home/${username}/.config/ksplashrc
-    echo "Theme=YaplassArchLinux" >> /mnt/home/${username}/.config/ksplashrc
-    arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/ksplashrc"
+    touch /mnt/home/"${username}"/.config/plasma-localerc
+    echo "[Formats]" > /mnt/home/"${username}"/.config/plasma-localerc
+    echo "LANG=${main_locale}.UTF-8" >> /mnt/home/"${username}"/.config/plasma-localerc
+    arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/plasma-localerc"
+    
+#     curl -L https://dllb2.pling.com/api/files/download/j/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE2MTIxMzQ0OTMiLCJ1IjpudWxsLCJsdCI6ImRvd25sb2FkIiwicyI6IjFkMTJkNDg3NGFiZmI0YjdlYWFjZDRlY2Q3MTFjYzUzNjAyYzlkMTE3NWU0NGVkNGIyYzc1YTk3NzM1M2NjZmVjZWE3YjBjMmM0NjQ2M2IxNGRiYjU3OTQ4YTIzOWQxZmEwZDMyN2M5YmM4MTVlYTNiYTZkZmM5Mjc0Y2QyZjNkIiwidCI6MTYxNDk4OTM5MCwic3RmcCI6IjQzNGRiNzkxOTM5N2YwNmZhNTA0ZTNkMjUyZTQ2N2U0Iiwic3RpcCI6IjE4NS4xMzYuMTE2LjE4OCJ9.T_IzT9QXL7T6eezrT-fTBRCSt4mt8NUdDBPLpgZtl_4/YaplassArchLinux.tar.gz | tar zx -C /usr/share/plasma/look-and-feel
+    
+#     touch /mnt/home/"${username}"/.config/ksplashrc
+#     echo "[KSplash]" > /mnt/home/"${username}"/.config/ksplashrc
+#     echo "Theme=YaplassArchLinux" >> /mnt/home/"${username}"/.config/ksplashrc
+#     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/ksplashrc"
+    
+    arch-chroot /mnt /bin/bash -c "chown -R ${username}:${username} /home/${username}"
 fi
 
 
