@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 function join_by { local d=$1; shift; local f=$1; shift; printf %s "$f" "${@/#/$d}"; }
 
@@ -530,26 +530,26 @@ fi
 
 if [[ "$should_install_kde" == true ]]; then
   arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} dolphin konsole packagekit-qt5 firefox"
-    arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
+  arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
     
-    mkdir /mnt/etc/sddm.conf.d
-    touch /mnt/etc/sddm.conf.d/kde_settings.conf
+    # mkdir /mnt/etc/sddm.conf.d
+    # touch /mnt/etc/sddm.conf.d/kde_settings.conf
     # SDDM settings section
-    echo "[Autologin]" > /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "Relogin=false" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "Session=" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "User=" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "[General]" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "HaltCommand=/usr/bin/systemctl poweroff" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "RebootCommand=/usr/bin/systemctl reboot" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "[Theme]" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "Current=breeze" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "[Users]" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "MaximumUid=60000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
-    echo "MinimumUid=1000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "[Autologin]" > /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "Relogin=false" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "Session=" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "User=" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "[General]" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "HaltCommand=/usr/bin/systemctl poweroff" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "RebootCommand=/usr/bin/systemctl reboot" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "[Theme]" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "Current=breeze" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "[Users]" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "MaximumUid=60000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
+    # echo "MinimumUid=1000" >> /mnt/etc/sddm.conf.d/kde_settings.conf
     
     mkdir /mnt/home/"${username}"/Documents
     mkdir /mnt/home/"${username}"/Downloads
@@ -557,22 +557,22 @@ if [[ "$should_install_kde" == true ]]; then
     mkdir /mnt/home/"${username}"/Pictures
     mkdir /mnt/home/"${username}"/Music
     
-    mkdir /mnt/home/"${username}"/.config
-    touch /mnt/home/"${username}"/.config/plasmarc
+    # mkdir /mnt/home/"${username}"/.config
+    # touch /mnt/home/"${username}"/.config/plasmarc
     # Plasma settings section
 #     echo "[Theme]" > /mnt/home/"${username}"/.config/plasmarc
 #     echo "name=breeze-dark" >> /mnt/home/"${username}"/.config/plasmarc
 #     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config"
 #     arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/plasmarc"
-    arch-chroot /mnt /bin/bash -c "kwriteconfig5 --file /home/${username}/.config/plasmarc --group Theme --key name breeze-dark"
-    arch-chroot /mnt /bin/bash -c "runuser -c -u ${username} \"lookandfeeltool -a org.kde.breezedark.desktop\""
+    # arch-chroot /mnt /bin/bash -c "kwriteconfig5 --file /home/${username}/.config/plasmarc --group Theme --key name breeze-dark"
+    # arch-chroot /mnt /bin/bash -c "runuser -c -u ${username} \"lookandfeeltool -a org.kde.breezedark.desktop\""
     
-    arch-chroot /mnt /bin/bash -c "kwriteconfig5 --file /home/${username}/.config/kxkbrc --group Layout --key LayoutList $(echo "${keymap}" | cut -f1 -d\"-\")"
+    # arch-chroot /mnt /bin/bash -c "kwriteconfig5 --file /home/${username}/.config/kxkbrc --group Layout --key LayoutList $(echo "${keymap}" | cut -f1 -d\"-\")"
     
-    touch /mnt/home/"${username}"/.config/plasma-localerc
-    echo "[Formats]" > /mnt/home/"${username}"/.config/plasma-localerc
-    echo "LANG=${main_locale}.UTF-8" >> /mnt/home/"${username}"/.config/plasma-localerc
-    arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/plasma-localerc"
+    # touch /mnt/home/"${username}"/.config/plasma-localerc
+    # echo "[Formats]" > /mnt/home/"${username}"/.config/plasma-localerc
+    # echo "LANG=${main_locale}.UTF-8" >> /mnt/home/"${username}"/.config/plasma-localerc
+    # arch-chroot /mnt /bin/bash -c "chown ${username}:${username} /home/${username}/.config/plasma-localerc"
     
 #     curl -L https://dllb2.pling.com/api/files/download/j/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE2MTIxMzQ0OTMiLCJ1IjpudWxsLCJsdCI6ImRvd25sb2FkIiwicyI6IjFkMTJkNDg3NGFiZmI0YjdlYWFjZDRlY2Q3MTFjYzUzNjAyYzlkMTE3NWU0NGVkNGIyYzc1YTk3NzM1M2NjZmVjZWE3YjBjMmM0NjQ2M2IxNGRiYjU3OTQ4YTIzOWQxZmEwZDMyN2M5YmM4MTVlYTNiYTZkZmM5Mjc0Y2QyZjNkIiwidCI6MTYxNDk4OTM5MCwic3RmcCI6IjQzNGRiNzkxOTM5N2YwNmZhNTA0ZTNkMjUyZTQ2N2U0Iiwic3RpcCI6IjE4NS4xMzYuMTE2LjE4OCJ9.T_IzT9QXL7T6eezrT-fTBRCSt4mt8NUdDBPLpgZtl_4/YaplassArchLinux.tar.gz | tar zx -C /usr/share/plasma/look-and-feel
     
