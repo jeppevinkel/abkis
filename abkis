@@ -1,27 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
 function join_by { local d=$1; shift; local f=$1; shift; printf %s "$f" "${@/#/$d}"; }
 
-# locales="en_US da_DK"
-# locales=($locales)
-# 
-# INDEX=1
-# for _locale in ${locales[@]}
-# do
-#     locale_options="$locale_options $INDEX $_locale OFF"
-#     echo "$locale_options"
-#     let INDEX=${INDEX}+1
-# done
 
-
-# echo $localelist
-
-
-# exit 1
-
-
-
-pacman -Syu
+pacman -Syu --noconfirm
 pacman -S --noconfirm dialog glibc
 
 #######################
@@ -446,12 +428,15 @@ clear
 
 case $retval in
   0)
+  nvidia_bool=true
   nvidia_str="nvidia lib32-nvidia-utils"
     ;;
   1)
+  nvidia_bool=false
   nvidia_str=""
     dialog --stdout --title "Info" --msgbox "The Nvidia driver will not be installed" 10 30;;
   255)
+  nvidia_bool=false
   nvidia_str=""
     dialog --stdout --title "Info" --msgbox "The Nvidia driver will not be installed" 10 30;
 esac
@@ -460,7 +445,7 @@ esac
 # Final confirmation dialog #
 #############################
 
-dialog --stdout --title "Final Confirm" --yesno "Hostname:     ${hostname}\nUsername:     ${username}\nLocales:      $(join_by ", " "${locales[@]}")\nMain locale:  ${main_locale}\nKeymap:       ${keymap}\nEfi:          ${efi_partition}\nRoot:         ${root_partition}\nSwap:         ${swap_partition}\nSystemd-boot: ${should_setup_systemd_boot}\nKDE:          ${should_install_kde}" 20 40
+dialog --stdout --title "Final Confirm" --yesno "Hostname:     ${hostname}\nUsername:     ${username}\nLocales:      $(join_by ", " "${locales[@]}")\nMain locale:  ${main_locale}\nKeymap:       ${keymap}\nEfi:          ${efi_partition}\nRoot:         ${root_partition}\nSwap:         ${swap_partition}\nSystemd-boot: ${should_setup_systemd_boot}\nKDE:          ${should_install_kde}\Nvidia:       ${nvidia_bool}" 20 40
 
 retval=$?
 
