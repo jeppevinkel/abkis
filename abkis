@@ -429,7 +429,7 @@ clear
 case $retval in
   0)
   nvidia_bool=true
-  nvidia_str="nvidia lib32-nvidia-utils"
+  nvidia_str="nvidia"
     ;;
   1)
   nvidia_bool=false
