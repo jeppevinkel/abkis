@@ -370,7 +370,7 @@ esac
 # Desktop Environment dialog #
 ##############################
 
-dialog --stdout --title "Desktop Environment" --yesno "Setup KDE-Plasma?" 10 30
+desktop_environment=$(dialog --stdout --title "Desktop Environment" --menu "Select DE" 20 61 5 0 None 1 "KDE Plasma" 2 Xfce)
 
 retval=$?
 
@@ -378,14 +378,14 @@ clear
 
 case $retval in
   0)
-  should_install_kde=true
+  should_install_de=true
     ;;
   1)
-  should_install_kde=false
-    dialog --stdout --title "Info" --msgbox "KDE-Plasma will not be set up" 10 30;;
+  should_install_de=false
+    dialog --stdout --title "Info" --msgbox "DE will not be set up" 10 30;;
   255)
-  should_install_kde=false
-    dialog --stdout --title "Info" --msgbox "KDE-Plasma will not be set up" 10 30;
+  should_install_de=false
+    dialog --stdout --title "Info" --msgbox "DE will not be set up" 10 30;
 esac
 
 ######################################
@@ -394,7 +394,7 @@ esac
 
 wayland_string=""
 
-if [[ "$should_install_kde" == true ]]; then
+if [[ "$should_install_de" == true ]]; then
 
 dialog --stdout --title "Desktop Environment" --yesno "Install wayland session?" 10 30
 
@@ -535,17 +535,25 @@ if [[ "$should_setup_systemd_boot" == true ]]; then
     printf "%s\n" "title Arch Linux" "linux /vmlinuz-linux" "initrd /initramfs-linux.img" "options root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
 fi
 
-if [[ "$should_install_kde" == true ]]; then
-  arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} dolphin konsole kate packagekit-qt5 firefox"
-  arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
+if [[ "$should_install_de" == true ]]; then
+  case $desktop_environment in
+    0)
+      
+    1)
+      arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} dolphin konsole kate packagekit-qt5 firefox"
+      arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
     
-  mkdir /mnt/home/"${username}"/Documents
-  mkdir /mnt/home/"${username}"/Downloads
-  mkdir /mnt/home/"${username}"/Videos
-  mkdir /mnt/home/"${username}"/Pictures
-  mkdir /mnt/home/"${username}"/Music
+      mkdir /mnt/home/"${username}"/Documents
+      mkdir /mnt/home/"${username}"/Downloads
+      mkdir /mnt/home/"${username}"/Videos
+      mkdir /mnt/home/"${username}"/Pictures
+      mkdir /mnt/home/"${username}"/Music
     
-  arch-chroot /mnt /bin/bash -c "chown -R ${username}:${username} /home/${username}"
+      arch-chroot /mnt /bin/bash -c "chown -R ${username}:${username} /home/${username}"
+    2)
+      arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm xfce4 ${wayland_string} firefox"
+  esac
+  
 fi
 
 
