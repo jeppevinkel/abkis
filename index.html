@@ -2,7 +2,7 @@
 
 function join_by { local d=$1; shift; local f=$1; shift; printf %s "$f" "${@/#/$d}"; }
 
-
+mount -o remount,size=4G /run/archiso/cowspace
 pacman -Syu --noconfirm
 pacman -S --noconfirm dialog glibc
 
