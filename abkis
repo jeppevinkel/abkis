@@ -468,7 +468,7 @@ esac
 # Final confirmation dialog #
 #############################
 
-dialog --stdout --title "Final Confirm" --yesno "Hostname:     ${hostname}\nUsername:     ${username}\nLocales:      $(join_by ", " "${locales[@]}")\nMain locale:  ${main_locale}\nKeymap:       ${keymap}\nEfi:          ${efi_partition}\nRoot:         ${root_partition}\nSwap:         ${swap_partition}\nSystemd-boot: ${should_setup_systemd_boot}\nKDE:          ${should_install_kde}\nNvidia:       ${nvidia_bool}" 20 40
+dialog --stdout --title "Final Confirm" --yesno "Hostname:     ${hostname}\nUsername:     ${username}\nLocales:      $(join_by ", " "${locales[@]}")\nMain locale:  ${main_locale}\nKeymap:       ${keymap}\nEfi:          ${efi_partition}\nRoot:         ${root_partition}\nSwap:         ${swap_partition}\nSystemd-boot: ${should_setup_systemd_boot}\nDE:          ${should_install_de}|${desktop_environment}\nNvidia:       ${nvidia_bool}" 20 40
 
 retval=$?
 
@@ -596,5 +596,5 @@ fi
 
 
 
-dialog --stdout --title "The End" --msgbox "Your system has now been set up and is ready for use!\nThe root password is the same as your user, so consider changing it for extra security." 10 40
-clear
+#dialog --stdout --title "The End" --msgbox "Your system has now been set up and is ready for use!\nThe root password is the same as your user, so consider changing it for extra security." 10 40
+#clear
