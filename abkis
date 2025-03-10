@@ -509,9 +509,9 @@ btrfs subvolume create /mnt/@home
 
 umount /mnt
 
-mount -o noatime,compress=lzo,space_cache,subvol=@ "$root_partition" /mnt
+mount -o noatime,compress=lzo,space_cache=v2,subvol=@ "$root_partition" /mnt
 mkdir /mnt/{boot,home}
-mount -o noatime,compress=lzo,space_cache,subvol=@home "$root_partition" /mnt/home
+mount -o noatime,compress=lzo,space_cache=v2,subvol=@home "$root_partition" /mnt/home
 
 mount "$efi_partition" /mnt/boot
 
