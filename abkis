@@ -389,6 +389,29 @@ case $retval in
 esac
 
 ######################################
+# Desktop Environment Greeter dialog #
+######################################
+
+#if [[ $desktop_environment == 2 ]]; then
+#  lightdm_greeter=$(dialog --stdout --title "Desktop Environment" --menu "Select DE" 20 61 5 0 "LightDM GTK Greeter" 1 "Pantheon Greeter" 2 "Mini Greeter" 3 "LightDM KDE Greeter" 4 "Nody Greeter")
+#
+#  retval=$?
+#
+#  clear
+#
+#  case $retval in
+#    0)
+#      ;;
+#    1)
+#    lightdm_greeter=-1
+#      dialog --stdout --title "Info" --msgbox "Greeter will not be set up" 10 30;;
+#    255)
+#    lightdm_greeter=-1
+#      dialog --stdout --title "Info" --msgbox "Greeter will not be set up" 10 30;;
+#  esac
+#fi
+
+######################################
 # Desktop Environment Wayland dialog #
 ######################################
 
@@ -538,7 +561,7 @@ fi
 if [[ "$should_install_de" == true ]]; then
   case $desktop_environment in
     0)
-      
+      ;;
     1)
       arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} dolphin konsole kate packagekit-qt5 firefox"
       arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
@@ -549,9 +572,22 @@ if [[ "$should_install_de" == true ]]; then
       mkdir /mnt/home/"${username}"/Pictures
       mkdir /mnt/home/"${username}"/Music
     
-      arch-chroot /mnt /bin/bash -c "chown -R ${username}:${username} /home/${username}"
+      arch-chroot /mnt /bin/bash -c "chown -R ${username}:${username} /home/${username}";;
     2)
-      arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm xfce4 ${wayland_string} firefox"
+      arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm xfce4 lightdm lightdm-gtk-greeter firefox";;
+      # 0 "LightDM GTK Greeter" 1 "Pantheon Greeter" 2 "Mini Greeter" 3 "LightDM KDE Greeter" 4 "Nody Greeter"
+      #case $lightdm_greeter in
+      #  0)
+      #    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm lightdm-gtk-greeter";;
+      #  1)
+      #    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm lightdm-pantheon-greeter";;
+      #  2)
+      #    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm lightdm-mini-greeter";;
+      #  3)
+      #    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm lightdm-kde-greeter";;
+      #  4)
+      #    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm nody-greeter";;
+      #esac
   esac
   
 fi
