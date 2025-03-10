@@ -537,6 +537,7 @@ echo "127.0.1.1    ${hostname}.localdomain ${hostname}" >> /mnt/etc/hosts
 if [[ "$should_load_keys" == true ]]; then
   echo 'KEYMAP="'"${keymap}"'"' > /mnt/etc/vconsole.conf
     loadkeys "$keymap"
+    arch-chroot /mnt /bin/bash -c "localectl set-keymap ${keymap}"
 fi
 
 if [[ "$should_set_locale" == true ]]; then
@@ -563,7 +564,7 @@ if [[ "$should_install_de" == true ]]; then
     0)
       ;;
     1)
-      arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} dolphin konsole kate packagekit-qt5 firefox"
+      arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} dolphin konsole kate firefox"
       arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
     
       mkdir /mnt/home/"${username}"/Documents
