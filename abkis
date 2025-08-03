@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Exit codes
+readonly EXIT_SUCCESS=0
+readonly EXIT_CANCELLED=1
+readonly EXIT_ERROR=2
+
+####################
+# Helper functions #
+####################
+
 # Join arguments with a specified delimiter
 # Usage: join_by DELIMITER ELEMENT1 [ELEMENT2 ...]
 # Example: join_by ", " "english" "danish" "german" → "english, danish, german"
@@ -18,6 +27,65 @@ function join_by {
   # Print first element followed by remaining elements with delimiter prefix
   printf '%s' "$first_element" "${@/#/$delimiter}"
 }
+
+# Helper function to handle dialog cancellation/escape
+handle_dialog_result() {
+    local retval="$1"
+    case $retval in
+        0) return 0 ;;
+        1|255) 
+            dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30
+            clear
+            exit $EXIT_CANCELLED
+            ;;
+    esac
+}
+
+# Helper function to show error and exit
+show_error_and_exit() {
+    local message="$1"
+    dialog --stdout --title "Error" --msgbox "$message" 10 40
+    clear
+    exit $EXIT_ERROR
+}
+
+# Helper function to get required input
+get_required_input() {
+    local title="$1"
+    local prompt="$2"
+    local input_type="${3:-inputbox}"
+    
+    local result
+    result=$(dialog --stdout --title "$title" --"$input_type" "$prompt" 0 0)
+    local retval=$?
+    clear
+    
+    handle_dialog_result $retval
+    
+    if [ -z "$result" ]; then
+        show_error_and_exit "$title cannot be empty"
+    fi
+    
+    echo "$result"
+}
+
+# Helper function for yes/no dialogs
+confirm_dialog() {
+    local title="$1"
+    local message="$2"
+    local height="${3:-10}"
+    local width="${4:-30}"
+    
+    dialog --stdout --title "$title" --yesno "$message" $height $width
+    local retval=$?
+    clear
+    
+    handle_dialog_result $retval
+}
+
+###############
+# Main Script #
+###############
 
 mount -o remount,size=4G /run/archiso/cowspace
 pacman -Syu --noconfirm
