@@ -60,7 +60,6 @@ get_required_input() {
     local result
     result=$(dialog --stdout --title "$title" --"$input_type" "$prompt" 0 0)
     local retval=$?
-    clear
     
     handle_dialog_result $retval
     
@@ -80,7 +79,6 @@ confirm_dialog() {
     
     dialog --stdout --title "$title" --yesno "$message" $height $width
     local retval=$?
-    clear
     
     handle_dialog_result $retval
 }
@@ -97,7 +95,6 @@ select_partition() {
     local selected_partition
     selected_partition=$(dialog --stdout --title "$title" --menu "$prompt" 0 0 0 $partition_list)
     local retval=$?
-    clear
     
     handle_dialog_result $retval
     
