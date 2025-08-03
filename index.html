@@ -1,6 +1,148 @@
 #!/bin/bash
 
-function join_by { local d=$1; shift; local f=$1; shift; printf %s "$f" "${@/#/$d}"; }
+# Exit codes
+readonly EXIT_SUCCESS=0
+readonly EXIT_CANCELLED=1
+readonly EXIT_ERROR=2
+
+####################
+# Helper functions #
+####################
+
+# Join arguments with a specified delimiter
+# Usage: join_by DELIMITER ELEMENT1 [ELEMENT2 ...]
+# Example: join_by ", " "english" "danish" "german" → "english, danish, german"
+function join_by {
+  local delimiter="$1"
+  shift
+
+  # Return early if no elements to join
+  if [[ $# -eq 0 ]]; then
+      return 0
+  fi
+
+  local first_element="$1"
+  shift
+
+  # Print first element followed by remaining elements with delimiter prefix
+  printf '%s' "$first_element" "${@/#/$delimiter}"
+}
+
+# Helper function to handle dialog cancellation/escape
+handle_dialog_result() {
+    local retval="$1"
+    case $retval in
+        0) return 0 ;;
+        1|255) 
+            dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30
+            clear
+            exit $EXIT_CANCELLED
+            ;;
+    esac
+}
+
+# Helper function to show error and exit
+show_error_and_exit() {
+    local message="$1"
+    local height="${2:-10}"
+    local width="${3:-40}"
+    dialog --stdout --title "Error" --msgbox "$message" $height $width
+    clear
+    exit $EXIT_ERROR
+}
+
+# Helper function to get required input
+get_required_input() {
+    local title="$1"
+    local prompt="$2"
+    local input_type="${3:-inputbox}"
+    
+    local result
+    result=$(dialog --stdout --title "$title" --"$input_type" "$prompt" 0 0)
+    local retval=$?
+    clear
+    
+    handle_dialog_result $retval
+    
+    if [ -z "$result" ]; then
+        show_error_and_exit "$title cannot be empty"
+    fi
+    
+    echo "$result"
+}
+
+# Helper function for yes/no dialogs
+confirm_dialog() {
+    local title="$1"
+    local message="$2"
+    local height="${3:-10}"
+    local width="${4:-30}"
+    
+    dialog --stdout --title "$title" --yesno "$message" $height $width
+    local retval=$?
+    clear
+    
+    handle_dialog_result $retval
+}
+
+# Helper function to select and validate partition
+select_partition() {
+    local title="$1" 
+    local prompt="$2"
+    local expected_fstype="$3"
+    local partition_list="$4"
+    local fstype_description="$5"
+    local selected_partitions="$6"  # Space-separated list of already selected partitions
+    
+    local selected_partition
+    selected_partition=$(dialog --stdout --title "$title" --menu "$prompt" 0 0 0 $partition_list)
+    local retval=$?
+    clear
+    
+    handle_dialog_result $retval
+    
+    # Check if partition already selected
+    if [[ " $selected_partitions " == *" $selected_partition "* ]]; then
+        show_error_and_exit "Partition $selected_partition is already selected"
+    fi
+    
+    # Validate filesystem type
+    local actual_fstype
+    actual_fstype=$(lsblk -n -o fstype "$selected_partition" 2>/dev/null)
+    
+    if [ -z "$actual_fstype" ]; then
+        show_error_and_exit "Cannot determine filesystem type for $selected_partition"
+    fi
+    
+    if [ "$actual_fstype" != "$expected_fstype" ]; then
+        show_error_and_exit "The selected partition isn't a $fstype_description filesystem (found: $actual_fstype)"
+    fi
+    
+    echo "$selected_partition"
+}
+
+# Helper function to generate partition list
+generate_partition_list() {
+    local partitions
+    partitions=$(lsblk -plnx size -I 8 -o name,size,type,fstype 2>/dev/null | \
+        grep -Ev "boot|rpmb|loop|disk" | \
+        tac)
+    
+    if [ -z "$partitions" ]; then
+        return 1
+    fi
+    
+    echo "$partitions" | awk '{
+        if (NF >= 3) {
+            fstype = (NF >= 4 && $4 != "") ? $4 : "unformatted"
+            printf "%s \"%s [%s]\"\n", $1, $2, fstype
+        }
+    }'
+}
+
+###############
+# Main Script #
+###############
 
 mount -o remount,size=4G /run/archiso/cowspace
 pacman -Syu --noconfirm
@@ -10,239 +152,76 @@ pacman -S --noconfirm dialog glibc
 # Confirmation dialog #
 #######################
 
-dialog --stdout --title "Confirm" --yesno "Have you set up the partition table?" 10 30
-
-retval=$?
-
+if ! dialog --stdout --title "Confirm" --yesno "Have you set up the partition table?" 10 30; then
+    dialog --stdout --title "Info" --msgbox "I expect the following partitions\n\nEfi:  FAT32\nRoot: BTRFS\nSwap: SWAP" 10 40
+    clear
+    exit $EXIT_CANCELLED
+fi
 clear
-
-case $retval in
-  0)
-    ;;
-  1)
-    dialog --stdout --title "Info" --msgbox "I expect the following partitions\n\nEfi:  FAT32\nRoot: BTRFS\nSwap: SWAP" 10 40;
-    clear;
-    exit 1;;
-  255)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-esac
 
 ###################
 # Hostname dialog #
 ###################
 
-hostname=$(dialog --stdout --title "Hostname" --inputbox "Enter hostname" 0 0)
-
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    if [ -z "$hostname" ]; then
-        dialog --stdout --title "Error" --msgbox "Hostname cannot be empty" 10 30;
-        clear;
-        exit 1;
-    fi
-    echo "Input string is ${hostname}";;
-  1)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-  255)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-esac
+hostname=$(get_required_input "Hostname" "Enter hostname")
+echo "Hostname: $hostname"
 
 ###################
 # Username dialog #
 ###################
 
-username=$(dialog --stdout --title "Username" --inputbox "Enter username" 0 0)
-
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    if [ -z "$username" ]; then
-        dialog --stdout --title "Error" --msgbox "Username cannot be empty" 10 30;
-        clear;
-        exit 1;
-    fi
-    echo "Input string is ${username}";;
-  1)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-  255)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-esac
+username=$(get_required_input "Username" "Enter username")
+echo "Username: $username"
 
 ###################
 # Password dialog #
 ###################
 
-password=$(dialog --stdout --title "Password" --passwordbox "Enter password" 0 0)
+password=$(get_required_input "Password" "Enter password" "passwordbox")
+password_repeat=$(get_required_input "Password" "Repeat password" "passwordbox")
 
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    if [ -z "$password" ]; then
-        dialog --stdout --title "Error" --msgbox "Password cannot be empty" 10 30;
-        clear;
-        exit 1;
-    fi;;
-  1)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-  255)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-esac
-
-
-password_repeat=$(dialog --stdout --title "Password" --passwordbox "Repeat password" 0 0)
-
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    if [ -z "$password_repeat" ]; then
-        dialog --stdout --title "Error" --msgbox "Password cannot be empty" 10 30;
-        clear;
-        exit 1;
-    elif [ "$password" != "$password_repeat" ]; then
-        dialog --stdout --title "Error" --msgbox "Passwords did not match" 10 30;
-        clear;
-        exit 1;
-    fi
-    echo "Input string is ${password_repeat}";;
-  1)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-  255)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-esac
+# Verify passwords match
+if [ "$password" != "$password_repeat" ]; then
+    show_error_and_exit "Passwords did not match"
+fi
 
 #######################
 # Confirmation dialog #
 #######################
 
-dialog --stdout --title "Confirm" --yesno "Hostname: ${hostname}\nUsername: ${username}" 10 30
-
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    ;;
-  1)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-  255)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-esac
+confirm_dialog "Confirm" "Hostname: $hostname\nUsername: $username"
 
 ####################
 # Partition dialog #
 ####################
 
-partitionlist=$(lsblk -plnx size -I 8 -o name,size,type | grep -Ev "boot|rpmb|loop|disk" | tac | awk '{print $1 " " $2}')
+partitionlist=$(generate_partition_list)
 
-efi_partition=$(dialog --stdout --title "Partitions" --menu "Select efi partition" 0 0 0 ${partitionlist})
+if [ -z "$partitionlist" ]; then
+    show_error_and_exit "No suitable partitions found. Please create partitions first."
+fi
 
-retval=$?
+selected_partitions=""
 
-clear
+# Select EFI partition
+efi_partition=$(select_partition "EFI System" "Select EFI partition" "vfat" "$partitionlist" "FAT32" "$selected_partitions")
+selected_partitions="$selected_partitions $efi_partition"
+echo "✓ EFI partition: $efi_partition"
 
-case $retval in
-  0)
-    if [ "$(lsblk -n -o fstype "${efi_partition}")" != "vfat" ]; then
-        dialog --stdout --title "Error" --msgbox "The selected partition isn't a FAT filesystem" 10 30;
-        clear;
-        exit 1;
-    fi
-    ;;
-  1)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-  255)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-esac
+# Select root partition
+root_partition=$(select_partition "Root System" "Select root partition" "btrfs" "$partitionlist" "BTRFS" "$selected_partitions")  
+selected_partitions="$selected_partitions $root_partition"
+echo "✓ Root partition: $root_partition"
 
+# Select swap partition
+swap_partition=$(select_partition "Swap Space" "Select swap partition" "swap" "$partitionlist" "SWAP" "$selected_partitions")
+echo "✓ Swap partition: $swap_partition"
 
-root_partition=$(dialog --stdout --title "Partitions" --menu "Select root partition" 0 0 0 ${partitionlist})
-
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    if [ "$(lsblk -n -o fstype "${root_partition}")" != "btrfs" ]; then
-        dialog --stdout --title "Error" --msgbox "The selected partition isn't a BTRFS filesystem" 10 30;
-        clear;
-        exit 1;
-    fi
-    ;;
-  1)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-  255)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-esac
-
-
-swap_partition=$(dialog --stdout --title "Partitions" --menu "Select swap partition" 0 0 0 ${partitionlist})
-
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    if [ "$(lsblk -n -o fstype "${swap_partition}")" != "swap" ]; then
-        dialog --stdout --title "Error" --msgbox "The selected partition isn't a SWAP filesystem" 10 30;
-        clear;
-        exit 1;
-    fi
-    ;;
-  1)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-  255)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-esac
+echo ""
+echo "Partition selection complete:"
+echo "  EFI:  $efi_partition"
+echo "  Root: $root_partition" 
+echo "  Swap: $swap_partition"
 
 #######################
 # Confirmation dialog #
