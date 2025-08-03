@@ -93,8 +93,6 @@ select_partition() {
     local selected_partitions="$6"  # Space-separated list of already selected partitions
     
     local selected_partition
-    echo "$title $prompt $partition_list"
-    read  -n 1 -p "Press any key..." keypress
     selected_partition=$(dialog --stdout --title "$title" --menu "$prompt" 0 0 0 $partition_list)
     local retval=$?
     
@@ -201,6 +199,10 @@ if [ -z "$partitionlist" ]; then
 fi
 
 selected_partitions=""
+
+
+echo "EFI System Select EFI partition vfat $partitionlist FAT32 $selected_partitions"
+read  -n 1 -p "Press any key..." keypress
 
 # Select EFI partition
 efi_partition=$(select_partition "EFI System" "Select EFI partition" "vfat" "$partitionlist" "FAT32" "$selected_partitions")
