@@ -88,12 +88,16 @@ select_partition() {
     local title="$1" 
     local prompt="$2"
     local expected_fstype="$3"
-    local partition_list="$4"
-    local fstype_description="$5"
+    local fstype_description="$4"
+    local -n partition_array_ref=$5
     local selected_partitions="$6"  # Space-separated list of already selected partitions
+
+    if [ ${#partition_array_ref[@]} -eq 0 ]; then
+        show_error_and_exit "No partitions available"
+    fi
     
     local selected_partition
-    selected_partition=$(dialog --stdout --title "$title" --menu "$prompt" 0 0 0 $partition_list)
+    selected_partition=$(dialog --stdout --title "$title" --menu "$prompt" 0 0 0 "${partition_array_ref[@]}")
     local retval=$?
     
     handle_dialog_result $retval
@@ -119,7 +123,9 @@ select_partition() {
 }
 
 # Helper function to generate partition list
-generate_partition_list() {
+generate_partition_array() {
+    local -n partition_array_ref=$1  # Use nameref to modify array in calling scope
+    
     local partitions
     partitions=$(lsblk -plnx size -I 8 -o name,size,type,fstype 2>/dev/null | \
         grep -Ev "boot|rpmb|loop|disk" | \
@@ -129,12 +135,20 @@ generate_partition_list() {
         return 1
     fi
     
-    echo "$partitions" | awk '{
-        if (NF >= 3) {
-            fstype = (NF >= 4 && $4 != "") ? $4 : "unformatted"
-            printf "%s \"%s [%s]\"\n", $1, $2, fstype
-        }
-    }'
+    # Clear the array
+    partition_array_ref=()
+    
+    # Populate array with alternating device and description
+    while IFS= read -r line; do
+        if [ -n "$line" ]; then
+            local device size fstype
+            device=$(echo "$line" | awk '{print $1}')
+            size=$(echo "$line" | awk '{print $2}')
+            fstype=$(echo "$line" | awk '{if (NF >= 4 && $4 != "") print $4; else print "unformatted"}')
+            
+            partition_array_ref+=("$device" "$size [$fstype]")
+        fi
+    done <<< "$partitions"
 }
 
 ###############
@@ -192,30 +206,25 @@ confirm_dialog "Confirm" "Hostname: $hostname\nUsername: $username"
 # Partition dialog #
 ####################
 
-partitionlist=$(generate_partition_list)
-
-if [ -z "$partitionlist" ]; then
+declare -a partition_list
+if ! generate_partition_array partition_list; then
     show_error_and_exit "No suitable partitions found. Please create partitions first."
 fi
 
 selected_partitions=""
 
-
-echo "EFI System Select EFI partition vfat $partitionlist FAT32 $selected_partitions"
-read  -n 1 -p "Press any key..." keypress
-
 # Select EFI partition
-efi_partition=$(select_partition "EFI System" "Select EFI partition" "vfat" "$partitionlist" "FAT32" "$selected_partitions")
+efi_partition=$(select_partition "EFI System" "Select EFI partition" "vfat" "FAT32" partition_list "$selected_partitions")
 selected_partitions="$selected_partitions $efi_partition"
 echo "✓ EFI partition: $efi_partition"
 
 # Select root partition
-root_partition=$(select_partition "Root System" "Select root partition" "btrfs" "$partitionlist" "BTRFS" "$selected_partitions")  
+root_partition=$(select_partition "Root System" "Select root partition" "btrfs" "BTRFS" partition_list "$selected_partitions")  
 selected_partitions="$selected_partitions $root_partition"
 echo "✓ Root partition: $root_partition"
 
 # Select swap partition
-swap_partition=$(select_partition "Swap Space" "Select swap partition" "swap" "$partitionlist" "SWAP" "$selected_partitions")
+swap_partition=$(select_partition "Swap Space" "Select swap partition" "swap" "SWAP" partition_list "$selected_partitions")
 echo "✓ Swap partition: $swap_partition"
 
 echo ""
