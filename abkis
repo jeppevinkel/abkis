@@ -1,6 +1,23 @@
 #!/bin/bash
 
-function join_by { local d=$1; shift; local f=$1; shift; printf %s "$f" "${@/#/$d}"; }
+# Join arguments with a specified delimiter
+# Usage: join_by DELIMITER ELEMENT1 [ELEMENT2 ...]
+# Example: join_by ", " "english" "danish" "german" → "english, danish, german"
+function join_by {
+  local delimiter="$1"
+  shift
+
+  # Return early if no elements to join
+  if [[ $# -eq 0 ]]; then
+      return 0
+  fi
+
+  local first_element="$1"
+  shift
+
+  # Print first element followed by remaining elements with delimiter prefix
+  printf '%s' "$first_element" "${@/#/$delimiter}"
+}
 
 mount -o remount,size=4G /run/archiso/cowspace
 pacman -Syu --noconfirm
