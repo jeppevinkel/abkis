@@ -103,7 +103,7 @@ select_partition() {
     fi
     
     local selected_partition
-    selected_partition=$(dialog --stdout --title "$title" --menu "$prompt" 0 0 0 "${partition_array_ref[@]}")
+    selected_partition=$(dialog --stdout --title "$title ($expected_fstype)" --menu "$prompt" 0 0 0 "${partition_array_ref[@]}")
     local retval=$?
     clear
     
