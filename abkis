@@ -617,3 +617,4 @@ fi
 
 #dialog --stdout --title "The End" --msgbox "Your system has now been set up and is ready for use!\nThe root password is the same as your user, so consider changing it for extra security." 10 40
 #clear
+exit $EXIT_SUCCESS
