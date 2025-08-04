@@ -31,3 +31,6 @@ Arch BTRFS KDE Install Script
 - `curl -L https://jeppevinkel.github.io/abkis | bash`
 Simply follow the on-screen instructions until it's complete.
 - `reboot`
+
+### Alpha
+For a **usually broken** alpha build, replace the url with `https://jeppevinkel.github.io/abkis/alpha`
