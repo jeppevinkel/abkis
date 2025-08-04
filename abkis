@@ -291,6 +291,7 @@ esac
 
 localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{if (NR == 1) {print $1 " " $2 " ON"} else {print $1 " " $2 " OFF"}}')
 
+# shellcheck disable=SC2207
 locales=($(dialog --stdout --title "Locale" --checklist "Select locales" 20 61 5 "${localelist}"))
 
 retval=$?
