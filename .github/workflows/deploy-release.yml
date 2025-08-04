@@ -39,6 +39,8 @@ jobs:
           git add .
           git commit -m "Release $VERSION"
           git push
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
 
 
 
