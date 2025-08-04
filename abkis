@@ -322,7 +322,7 @@ do
     ((INDEX=INDEX+1))
 done
 
-main_locale=$(dialog --stdout --title "Locale" --menu "Select main locale" 20 61 5 ${locale_options})
+main_locale=$(dialog --stdout --title "Locale" --menu "Select main locale" 20 61 5 "${locale_options}")
 
 retval=$?
 
@@ -345,7 +345,7 @@ esac
 
 keymaplist=$(find /usr/share/kbd/keymaps -type f -printf "%f %h\n" | sort -V | sed 's/.map.gz//g' | sed 's/\/.*.\///')
 
-keymap=$(dialog --stdout --title "Keymap" --menu "Select keymap" 20 61 5 ${keymaplist})
+keymap=$(dialog --stdout --title "Keymap" --menu "Select keymap" 20 61 5 "${keymaplist}")
 
 retval=$?
 
@@ -549,9 +549,11 @@ sed -i "/%wheel ALL=(ALL) ALL/s/^#//" /mnt/etc/sudoers
 
 echo "${hostname}" > /mnt/etc/hostname
 
-echo "127.0.0.1    localhost" >> /mnt/etc/hosts
-echo "::1          localhost" >> /mnt/etc/hosts
-echo "127.0.1.1    ${hostname}.localdomain ${hostname}" >> /mnt/etc/hosts
+{
+  echo "127.0.0.1    localhost";
+  echo "::1          localhost";
+  echo "127.0.1.1    ${hostname}.localdomain ${hostname}";
+} >> /mnt/etc/hosts
 
 if [[ "$should_load_keys" == true ]]; then
   echo 'KEYMAP="'"${keymap}"'"' > /mnt/etc/vconsole.conf
