@@ -14,20 +14,30 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: gp
-      
-      - run: |
+
+      - name: Configure git
+        run: |
           git config pull.rebase false
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           git fetch
           git pull
+
+      - name: Pull script file
+        run: |
           git show origin/master:abkis > index.html
+
+      - name: Replace version tag
+        run: |
           sed 's/<version>/$VERSION/'
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+
+      - name: Push script to github pages
+        run: |
           git add .
           git commit -m "Release $VERSION"
           git push
-        env:
-          VERSION: ${{ github.event.release.tag_name }}
 
 
 
