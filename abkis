@@ -50,7 +50,7 @@ show_error_and_exit() {
     local message="$1"
     local height="${2:-10}"
     local width="${3:-40}"
-    dialog --stdout --title "Error" --msgbox "$message" $height $width
+    dialog --stdout --title "Error" --msgbox "$message" "$height" "$width"
     clear
     exit $EXIT_ERROR
 }
@@ -75,18 +75,41 @@ get_required_input() {
     function_result="$result"
 }
 
-# Helper function for yes/no dialogs
+# Helper function for yes/no dialogs that cancel the installer on no
 confirm_dialog() {
     local title="$1"
     local message="$2"
     local height="${3:-10}"
     local width="${4:-30}"
     
-    dialog --stdout --title "$title" --yesno "$message" $height $width
+    dialog --stdout --title "$title" --yesno "$message" "$height" "$width"
     local retval=$?
     clear
     
     handle_dialog_result $retval
+}
+
+# Helper function for a Simple yes/no dialog that returns true/false
+ask_yes_no() {
+    local title="$1"
+    local message="$2"
+    local height="${3:-10}"
+    local width="${4:-30}"
+    local cancel_message="$5"
+    
+    dialog --stdout --title "$title" --yesno "$message" "$height" "$width"
+    local retval=$?
+    clear
+    
+    if [[ $retval -eq 0 ]]; then
+        return 0  # true
+    else
+        if [[ -n "$cancel_message" ]]; then
+            dialog --stdout --title "Info" --msgbox "$cancel_message" 10 30
+            clear
+        fi
+        return 1  # false
+    fi
 }
 
 # Helper function to select and validate partition
@@ -170,12 +193,10 @@ pacman -S --noconfirm dialog glibc
 # Confirmation dialog #
 #######################
 
-if ! dialog --stdout --title "Confirm" --yesno "Have you set up the partition table?" 10 30; then
-    dialog --stdout --title "Info" --msgbox "I expect the following partitions\n\nEfi:  FAT32\nRoot: BTRFS\nSwap: SWAP" 10 40
+if ! ask_yes_no "Confirm" "Have you set up the partition table?" 10 40 "I expect the following partitions\n\nEfi:  FAT32\nRoot: BTRFS\nSwap: SWAP"; then
     clear
     exit $EXIT_CANCELLED
 fi
-clear
 
 ###################
 # Hostname dialog #
@@ -240,6 +261,11 @@ swap_partition="$function_result"
 # Confirmation dialog #
 #######################
 
+if ! ask_yes_no "Confirm" "Efi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}" 10 30 "Installation has been cancelled"; then
+    clear
+    exit $EXIT_CANCELLED
+fi
+
 dialog --stdout --title "Confirm" --yesno "Efi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}" 10 30
 
 retval=$?
@@ -265,7 +291,7 @@ esac
 
 localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{if (NR == 1) {print $1 " " $2 " ON"} else {print $1 " " $2 " OFF"}}')
 
-locales=($(dialog --stdout --title "Locale" --checklist "Select locales" 20 61 5 ${localelist}))
+locales=($(dialog --stdout --title "Locale" --checklist "Select locales" 20 61 5 "${localelist}"))
 
 retval=$?
 
