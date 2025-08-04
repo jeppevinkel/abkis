@@ -30,7 +30,7 @@ jobs:
 
       - name: Replace version tag
         run: |
-          sed "s/<version>/$VERSION/"
+          sed "s/<version>/$VERSION/" index.html
         env:
           VERSION: ${{ github.event.release.tag_name }}
 
