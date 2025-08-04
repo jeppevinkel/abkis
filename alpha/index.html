@@ -1,10 +1,13 @@
 #!/bin/bash
-# Version: v2.0-alpha.1
+# Version: v2.0-alpha.2
 
 # Exit codes
 readonly EXIT_SUCCESS=0
 readonly EXIT_CANCELLED=1
 readonly EXIT_ERROR=2
+
+# Global variable for function results
+declare -g function_result=""
 
 ####################
 # Helper functions #
@@ -61,6 +64,7 @@ get_required_input() {
     local result
     result=$(dialog --stdout --title "$title" --"$input_type" "$prompt" 0 0)
     local retval=$?
+    clear
     
     handle_dialog_result $retval
     
@@ -68,7 +72,7 @@ get_required_input() {
         show_error_and_exit "$title cannot be empty"
     fi
     
-    echo "$result"
+    function_result="$result"
 }
 
 # Helper function for yes/no dialogs
@@ -80,6 +84,7 @@ confirm_dialog() {
     
     dialog --stdout --title "$title" --yesno "$message" $height $width
     local retval=$?
+    clear
     
     handle_dialog_result $retval
 }
@@ -100,6 +105,7 @@ select_partition() {
     local selected_partition
     selected_partition=$(dialog --stdout --title "$title" --menu "$prompt" 0 0 0 "${partition_array_ref[@]}")
     local retval=$?
+    clear
     
     handle_dialog_result $retval
     
@@ -120,7 +126,7 @@ select_partition() {
         show_error_and_exit "The selected partition isn't a $fstype_description filesystem (found: $actual_fstype)"
     fi
     
-    echo "$selected_partition"
+    function_result="$selected_partition"
 }
 
 # Helper function to generate partition list
@@ -175,22 +181,26 @@ clear
 # Hostname dialog #
 ###################
 
-hostname=$(get_required_input "Hostname" "Enter hostname")
+get_required_input "Hostname" "Enter hostname"
+hostname="$function_result"
 echo "Hostname: $hostname"
 
 ###################
 # Username dialog #
 ###################
 
-username=$(get_required_input "Username" "Enter username")
+get_required_input "Username" "Enter username"
+username="$function_result"
 echo "Username: $username"
 
 ###################
 # Password dialog #
 ###################
 
-password=$(get_required_input "Password" "Enter password" "passwordbox")
-password_repeat=$(get_required_input "Password" "Repeat password" "passwordbox")
+get_required_input "Password" "Enter password" "passwordbox"
+password="$function_result"
+get_required_input "Password" "Repeat password" "passwordbox"
+password_repeat="$function_result"
 
 # Verify passwords match
 if [ "$password" != "$password_repeat" ]; then
@@ -215,17 +225,20 @@ fi
 selected_partitions=""
 
 # Select EFI partition
-efi_partition=$(select_partition "EFI System" "Select EFI partition" "vfat" "FAT32" partition_list "$selected_partitions")
+select_partition "EFI System" "Select EFI partition" "vfat" "FAT32" partition_list "$selected_partitions"
+efi_partition="$function_result"
 selected_partitions="$selected_partitions $efi_partition"
 echo "✓ EFI partition: $efi_partition"
 
 # Select root partition
-root_partition=$(select_partition "Root System" "Select root partition" "btrfs" "BTRFS" partition_list "$selected_partitions")  
+select_partition "Root System" "Select root partition" "btrfs" "BTRFS" partition_list "$selected_partitions"
+root_partition="$function_result"
 selected_partitions="$selected_partitions $root_partition"
 echo "✓ Root partition: $root_partition"
 
 # Select swap partition
-swap_partition=$(select_partition "Swap Space" "Select swap partition" "swap" "SWAP" partition_list "$selected_partitions")
+select_partition "Swap Space" "Select swap partition" "swap" "SWAP" partition_list "$selected_partitions"
+swap_partition="$function_result"
 echo "✓ Swap partition: $swap_partition"
 
 echo ""
