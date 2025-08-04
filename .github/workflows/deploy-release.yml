@@ -27,13 +27,20 @@ jobs:
           git fetch
           git pull
 
-      - name: Pull script file
+      - name: Push to main release
+        if: ${{ !github.event.release.prerelease }}
         run: |
           git show origin/master:abkis > index.html
-
-      - name: Replace version tag
-        run: |
           sed -i "s/<version>/$VERSION/" index.html
+          # Also push to alpha because alpha should always be the newest
+          git show origin/master:abkis > alpha/index.html
+          sed -i "s/<version>/$VERSION/" alpha/index.html
+
+      - name: Push to alpha release
+        if: ${{ github.event.release.prerelease }}
+        run: |
+          git show origin/master:abkis > alpha/index.html
+          sed -i "s/<version>/$VERSION/" alpha/index.html
 
       - name: Push script to github pages
         run: |
