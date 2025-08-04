@@ -33,7 +33,7 @@ jobs:
 
       - name: Replace version tag
         run: |
-          sed "s/<version>/$VERSION/" index.html
+          sed -i "s/<version>/$VERSION/" index.html
 
       - name: Push script to github pages
         run: |
