@@ -1,1 +1,591 @@
-alpha test
+#!/bin/bash
+# Version: v2.0-alpha.1
+
+# Exit codes
+readonly EXIT_SUCCESS=0
+readonly EXIT_CANCELLED=1
+readonly EXIT_ERROR=2
+
+####################
+# Helper functions #
+####################
+
+# Join arguments with a specified delimiter
+# Usage: join_by DELIMITER ELEMENT1 [ELEMENT2 ...]
+# Example: join_by ", " "english" "danish" "german" → "english, danish, german"
+function join_by {
+  local delimiter="$1"
+  shift
+
+  # Return early if no elements to join
+  if [[ $# -eq 0 ]]; then
+      return 0
+  fi
+
+  local first_element="$1"
+  shift
+
+  # Print first element followed by remaining elements with delimiter prefix
+  printf '%s' "$first_element" "${@/#/$delimiter}"
+}
+
+# Helper function to handle dialog cancellation/escape
+handle_dialog_result() {
+    local retval="$1"
+    case $retval in
+        0) return 0 ;;
+        1|255) 
+            dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30
+            clear
+            exit $EXIT_CANCELLED
+            ;;
+    esac
+}
+
+# Helper function to show error and exit
+show_error_and_exit() {
+    local message="$1"
+    local height="${2:-10}"
+    local width="${3:-40}"
+    dialog --stdout --title "Error" --msgbox "$message" $height $width
+    clear
+    exit $EXIT_ERROR
+}
+
+# Helper function to get required input
+get_required_input() {
+    local title="$1"
+    local prompt="$2"
+    local input_type="${3:-inputbox}"
+    
+    local result
+    result=$(dialog --stdout --title "$title" --"$input_type" "$prompt" 0 0)
+    local retval=$?
+    
+    handle_dialog_result $retval
+    
+    if [ -z "$result" ]; then
+        show_error_and_exit "$title cannot be empty"
+    fi
+    
+    echo "$result"
+}
+
+# Helper function for yes/no dialogs
+confirm_dialog() {
+    local title="$1"
+    local message="$2"
+    local height="${3:-10}"
+    local width="${4:-30}"
+    
+    dialog --stdout --title "$title" --yesno "$message" $height $width
+    local retval=$?
+    
+    handle_dialog_result $retval
+}
+
+# Helper function to select and validate partition
+select_partition() {
+    local title="$1" 
+    local prompt="$2"
+    local expected_fstype="$3"
+    local fstype_description="$4"
+    local -n partition_array_ref=$5
+    local selected_partitions="$6"  # Space-separated list of already selected partitions
+
+    if [ ${#partition_array_ref[@]} -eq 0 ]; then
+        show_error_and_exit "No partitions available"
+    fi
+    
+    local selected_partition
+    selected_partition=$(dialog --stdout --title "$title" --menu "$prompt" 0 0 0 "${partition_array_ref[@]}")
+    local retval=$?
+    
+    handle_dialog_result $retval
+    
+    # Check if partition already selected
+    if [[ " $selected_partitions " == *" $selected_partition "* ]]; then
+        show_error_and_exit "Partition $selected_partition is already selected"
+    fi
+    
+    # Validate filesystem type
+    local actual_fstype
+    actual_fstype=$(lsblk -n -o fstype "$selected_partition" 2>/dev/null)
+    
+    if [ -z "$actual_fstype" ]; then
+        show_error_and_exit "Cannot determine filesystem type for $selected_partition"
+    fi
+    
+    if [ "$actual_fstype" != "$expected_fstype" ]; then
+        show_error_and_exit "The selected partition isn't a $fstype_description filesystem (found: $actual_fstype)"
+    fi
+    
+    echo "$selected_partition"
+}
+
+# Helper function to generate partition list
+generate_partition_array() {
+    local -n partition_array_ref=$1  # Use nameref to modify array in calling scope
+    
+    local partitions
+    partitions=$(lsblk -plnx size -I 8 -o name,size,type,fstype 2>/dev/null | \
+        grep -Ev "boot|rpmb|loop|disk" | \
+        tac)
+    
+    if [ -z "$partitions" ]; then
+        return 1
+    fi
+    
+    # Clear the array
+    partition_array_ref=()
+    
+    # Populate array with alternating device and description
+    while IFS= read -r line; do
+        if [ -n "$line" ]; then
+            local device size fstype
+            device=$(echo "$line" | awk '{print $1}')
+            size=$(echo "$line" | awk '{print $2}')
+            fstype=$(echo "$line" | awk '{if (NF >= 4 && $4 != "") print $4; else print "unformatted"}')
+            
+            partition_array_ref+=("$device" "$size [$fstype]")
+        fi
+    done <<< "$partitions"
+}
+
+###############
+# Main Script #
+###############
+
+mount -o remount,size=4G /run/archiso/cowspace
+pacman -Syu --noconfirm
+pacman -S --noconfirm dialog glibc
+
+#######################
+# Confirmation dialog #
+#######################
+
+if ! dialog --stdout --title "Confirm" --yesno "Have you set up the partition table?" 10 30; then
+    dialog --stdout --title "Info" --msgbox "I expect the following partitions\n\nEfi:  FAT32\nRoot: BTRFS\nSwap: SWAP" 10 40
+    clear
+    exit $EXIT_CANCELLED
+fi
+clear
+
+###################
+# Hostname dialog #
+###################
+
+hostname=$(get_required_input "Hostname" "Enter hostname")
+echo "Hostname: $hostname"
+
+###################
+# Username dialog #
+###################
+
+username=$(get_required_input "Username" "Enter username")
+echo "Username: $username"
+
+###################
+# Password dialog #
+###################
+
+password=$(get_required_input "Password" "Enter password" "passwordbox")
+password_repeat=$(get_required_input "Password" "Repeat password" "passwordbox")
+
+# Verify passwords match
+if [ "$password" != "$password_repeat" ]; then
+    show_error_and_exit "Passwords did not match"
+fi
+
+#######################
+# Confirmation dialog #
+#######################
+
+confirm_dialog "Confirm" "Hostname: $hostname\nUsername: $username"
+
+####################
+# Partition dialog #
+####################
+
+declare -a partition_list
+if ! generate_partition_array partition_list; then
+    show_error_and_exit "No suitable partitions found. Please create partitions first."
+fi
+
+selected_partitions=""
+
+# Select EFI partition
+efi_partition=$(select_partition "EFI System" "Select EFI partition" "vfat" "FAT32" partition_list "$selected_partitions")
+selected_partitions="$selected_partitions $efi_partition"
+echo "✓ EFI partition: $efi_partition"
+
+# Select root partition
+root_partition=$(select_partition "Root System" "Select root partition" "btrfs" "BTRFS" partition_list "$selected_partitions")  
+selected_partitions="$selected_partitions $root_partition"
+echo "✓ Root partition: $root_partition"
+
+# Select swap partition
+swap_partition=$(select_partition "Swap Space" "Select swap partition" "swap" "SWAP" partition_list "$selected_partitions")
+echo "✓ Swap partition: $swap_partition"
+
+echo ""
+echo "Partition selection complete:"
+echo "  EFI:  $efi_partition"
+echo "  Root: $root_partition" 
+echo "  Swap: $swap_partition"
+
+#######################
+# Confirmation dialog #
+#######################
+
+dialog --stdout --title "Confirm" --yesno "Efi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    ;;
+  1)
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+#################
+# Locale dialog #
+#################
+
+localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{if (NR == 1) {print $1 " " $2 " ON"} else {print $1 " " $2 " OFF"}}')
+
+locales=($(dialog --stdout --title "Locale" --checklist "Select locales" 20 61 5 ${localelist}))
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+  should_set_locale=true
+    ;;
+  1)
+  should_set_locale=false
+    dialog --stdout --title "Info" --msgbox "No locale has been generated!" 10 30;;
+  255)
+  should_set_locale=false
+    dialog --stdout --title "Info" --msgbox "No locale has been generated!" 10 30;;
+esac
+
+#################
+# Locale dialog #
+#################
+
+INDEX=1
+for _locale in "${locales[@]}"
+do
+    locale_options="$locale_options $INDEX $_locale"
+    echo "$locale_options"
+    ((INDEX=INDEX+1))
+done
+
+main_locale=$(dialog --stdout --title "Locale" --menu "Select main locale" 20 61 5 ${locale_options})
+
+retval=$?
+
+case $retval in
+  0)
+  should_set_main_locale=true
+  main_locale=${locales[$main_locale-1]}
+    ;;
+  1)
+  should_set_main_locale=false
+    dialog --stdout --title "Info" --msgbox "Main locale has not been set!" 10 30;;
+  255)
+  should_set_main_locale=false
+    dialog --stdout --title "Info" --msgbox "Main locale has not been set!" 10 30;;
+esac
+
+#################
+# Keymap dialog #
+#################
+
+keymaplist=$(find /usr/share/kbd/keymaps -type f -printf "%f %h\n" | sort -V | sed 's/.map.gz//g' | sed 's/\/.*.\///')
+
+keymap=$(dialog --stdout --title "Keymap" --menu "Select keymap" 20 61 5 ${keymaplist})
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+  should_load_keys=true
+    ;;
+  1)
+  should_load_keys=false
+    dialog --stdout --title "Info" --msgbox "No keymap has been selected!" 10 30;;
+  255)
+  should_load_keys=false
+    dialog --stdout --title "Info" --msgbox "No keymap has been selected!" 10 30;;
+esac
+
+#############################
+# Setup systemd-boot dialog #
+#############################
+
+dialog --stdout --title "Boot" --yesno "Setup systemd-boot?" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+  should_setup_systemd_boot=true
+    ;;
+  1)
+  should_setup_systemd_boot=false
+    dialog --stdout --title "Info" --msgbox "Systemd-boot will not be set up" 10 30;;
+  255)
+  should_setup_systemd_boot=false
+    dialog --stdout --title "Info" --msgbox "Systemd-boot will not be set up" 10 30;
+esac
+
+##############################
+# Desktop Environment dialog #
+##############################
+
+desktop_environment=$(dialog --stdout --title "Desktop Environment" --menu "Select DE" 20 61 5 0 None 1 "KDE Plasma" 2 Xfce)
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+  should_install_de=true
+    ;;
+  1)
+  should_install_de=false
+    dialog --stdout --title "Info" --msgbox "DE will not be set up" 10 30;;
+  255)
+  should_install_de=false
+    dialog --stdout --title "Info" --msgbox "DE will not be set up" 10 30;
+esac
+
+######################################
+# Desktop Environment Greeter dialog #
+######################################
+
+#if [[ $desktop_environment == 2 ]]; then
+#  lightdm_greeter=$(dialog --stdout --title "Desktop Environment" --menu "Select DE" 20 61 5 0 "LightDM GTK Greeter" 1 "Pantheon Greeter" 2 "Mini Greeter" 3 "LightDM KDE Greeter" 4 "Nody Greeter")
+#
+#  retval=$?
+#
+#  clear
+#
+#  case $retval in
+#    0)
+#      ;;
+#    1)
+#    lightdm_greeter=-1
+#      dialog --stdout --title "Info" --msgbox "Greeter will not be set up" 10 30;;
+#    255)
+#    lightdm_greeter=-1
+#      dialog --stdout --title "Info" --msgbox "Greeter will not be set up" 10 30;;
+#  esac
+#fi
+
+######################################
+# Desktop Environment Wayland dialog #
+######################################
+
+wayland_string=""
+
+if [[ "$should_install_de" == true ]]; then
+
+dialog --stdout --title "Desktop Environment" --yesno "Install wayland session?" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+  wayland_string="plasma-wayland-session egl-wayland"
+    ;;
+  1)
+  wayland_string=""
+    dialog --stdout --title "Info" --msgbox "Wayland session will not be set up" 10 30;;
+  255)
+  wayland_string=""
+    dialog --stdout --title "Info" --msgbox "Wayland session will not be set up" 10 30;
+esac
+
+fi
+
+#####################
+# GPU driver dialog #
+#####################
+
+dialog --stdout --title "Graphics Driver" --yesno "Install Nvidia driver?" 10 30
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+  nvidia_bool=true
+  nvidia_str="nvidia"
+    ;;
+  1)
+  nvidia_bool=false
+  nvidia_str=""
+    dialog --stdout --title "Info" --msgbox "The Nvidia driver will not be installed" 10 30;;
+  255)
+  nvidia_bool=false
+  nvidia_str=""
+    dialog --stdout --title "Info" --msgbox "The Nvidia driver will not be installed" 10 30;
+esac
+
+#############################
+# Final confirmation dialog #
+#############################
+
+dialog --stdout --title "Final Confirm" --yesno "Hostname:     ${hostname}\nUsername:     ${username}\nLocales:      $(join_by ", " "${locales[@]}")\nMain locale:  ${main_locale}\nKeymap:       ${keymap}\nEfi:          ${efi_partition}\nRoot:         ${root_partition}\nSwap:         ${swap_partition}\nSystemd-boot: ${should_setup_systemd_boot}\nDE:          ${should_install_de}|${desktop_environment}\nNvidia:       ${nvidia_bool}" 20 40
+
+retval=$?
+
+clear
+
+case $retval in
+  0)
+    ;;
+  1)
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+  255)
+    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
+    clear;
+    exit 1;;
+esac
+
+#############################
+# Stop here if just testing #
+#############################
+
+if [ "$EUID" -ne 0 ]; then
+    echo "Stopping here to avoid issues since you aren't root!"
+    exit 1
+fi
+
+####################
+# Atumatic section #
+####################
+
+mkswap "$swap_partition"
+
+mount "$root_partition" /mnt
+
+btrfs subvolume create /mnt/@
+btrfs subvolume create /mnt/@home
+
+umount /mnt
+
+mount -o noatime,compress=lzo,space_cache=v2,subvol=@ "$root_partition" /mnt
+mkdir /mnt/{boot,home}
+mount -o noatime,compress=lzo,space_cache=v2,subvol=@home "$root_partition" /mnt/home
+
+mount "$efi_partition" /mnt/boot
+
+pacstrap /mnt base base-devel linux linux-firmware micro sudo intel-ucode networkmanager xclip "${nvidia_str}"
+
+genfstab -U /mnt >> /mnt/etc/fstab
+
+arch-chroot /mnt /bin/bash -c "ln -sf /usr/share/zoneinfo/Europe/Copenhagen /etc/localtime"
+arch-chroot /mnt /bin/bash -c "hwclock --systohc"
+
+arch-chroot /mnt /bin/bash -c "useradd -m -G wheel ${username}"
+arch-chroot /mnt /bin/bash -c 'echo "'"${username}:${password}"'" | chpasswd'
+arch-chroot /mnt /bin/bash -c 'echo "'"root:${password}"'" | chpasswd'
+arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
+sed -i "/%wheel ALL=(ALL) ALL/s/^#//" /mnt/etc/sudoers
+
+echo "${hostname}" > /mnt/etc/hostname
+
+echo "127.0.0.1    localhost" >> /mnt/etc/hosts
+echo "::1          localhost" >> /mnt/etc/hosts
+echo "127.0.1.1    ${hostname}.localdomain ${hostname}" >> /mnt/etc/hosts
+
+if [[ "$should_load_keys" == true ]]; then
+  echo 'KEYMAP="'"${keymap}"'"' > /mnt/etc/vconsole.conf
+    loadkeys "$keymap"
+    arch-chroot /mnt /bin/bash -c "localectl set-keymap ${keymap}"
+fi
+
+if [[ "$should_set_locale" == true ]]; then
+
+    for locale in "${locales[@]}"
+    do
+        arch-chroot /mnt /bin/bash -c "sed -i 's/#\('${locale}.UTF-8'\)/\1/' /etc/locale.gen"
+    done
+    
+    arch-chroot /mnt /bin/bash -c "locale-gen"
+fi
+
+if [[ "$should_set_main_locale" == true ]]; then
+  echo 'LANG="'"${main_locale}.UTF-8"'"' > /mnt/etc/locale.conf
+fi
+
+if [[ "$should_setup_systemd_boot" == true ]]; then
+  arch-chroot /mnt /bin/bash -c "bootctl install"
+    printf "%s\n" "title Arch Linux" "linux /vmlinuz-linux" "initrd /initramfs-linux.img" "options root=${root_partition} rw rootfstype=btrfs rootflags=subvol=@" > /mnt/boot/loader/entries/arch.conf
+fi
+
+if [[ "$should_install_de" == true ]]; then
+  case $desktop_environment in
+    0)
+      ;;
+    1)
+      arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm sddm sddm-kcm plasma ${wayland_string} dolphin konsole kate firefox"
+      arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
+    
+      mkdir /mnt/home/"${username}"/Documents
+      mkdir /mnt/home/"${username}"/Downloads
+      mkdir /mnt/home/"${username}"/Videos
+      mkdir /mnt/home/"${username}"/Pictures
+      mkdir /mnt/home/"${username}"/Music
+    
+      arch-chroot /mnt /bin/bash -c "chown -R ${username}:${username} /home/${username}";;
+    2)
+      arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm xfce4 lightdm lightdm-gtk-greeter firefox";;
+      # 0 "LightDM GTK Greeter" 1 "Pantheon Greeter" 2 "Mini Greeter" 3 "LightDM KDE Greeter" 4 "Nody Greeter"
+      #case $lightdm_greeter in
+      #  0)
+      #    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm lightdm-gtk-greeter";;
+      #  1)
+      #    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm lightdm-pantheon-greeter";;
+      #  2)
+      #    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm lightdm-mini-greeter";;
+      #  3)
+      #    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm lightdm-kde-greeter";;
+      #  4)
+      #    arch-chroot /mnt /bin/bash -c "pacman -S --noconfirm nody-greeter";;
+      #esac
+  esac
+  
+fi
+
+
+
+
+
+#dialog --stdout --title "The End" --msgbox "Your system has now been set up and is ready for use!\nThe root password is the same as your user, so consider changing it for extra security." 10 40
+#clear
