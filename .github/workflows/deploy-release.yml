@@ -6,6 +6,9 @@ on:
 
   workflow_dispatch:
 
+env:
+  VERSION: ${{ github.event.release.tag_name || 'Manual Deployment' }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -31,16 +34,12 @@ jobs:
       - name: Replace version tag
         run: |
           sed "s/<version>/$VERSION/" index.html
-        env:
-          VERSION: ${{ github.event.release.tag_name || 'Manual Deployment' }}
 
       - name: Push script to github pages
         run: |
           git add .
           git commit -m "Release $VERSION"
           git push
-        env:
-          VERSION: ${{ github.event.release.tag_name || 'Manual Deployment' }}
 
 
 
