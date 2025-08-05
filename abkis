@@ -289,10 +289,28 @@ esac
 # Locale dialog #
 #################
 
-localelist=$(grep UTF-8 /etc/locale.gen | sed 's/\..[^ tab]\+//' | sed '/@/d' | sed 's/#//g' | sed 's/^\s*\(.*[^ \t]\)\(\s\+\)*$/\1/' | awk '{if (NR == 1) {print $1 " " $2 " ON"} else {print $1 " " $2 " OFF"}}')
+localelist=()
+while IFS= read -r locale; do
+    if [[ -n "$locale" ]]; then
+        # Create a more readable description
+        desc="$locale"
+        case "$locale" in
+            en_US*) desc="$locale (English - United States)" ;;
+            en_GB*) desc="$locale (English - United Kingdom)" ;;
+            en_DK*) desc="$locale (English - Denmark)" ;;
+            da_DK*) desc="$locale (Danish - Denmark)" ;;
+            sv_SE*) desc="$locale (Swedish - Sweden 😈)" ;;
+            de_DE*) desc="$locale (German - Germany)" ;;
+            fr_FR*) desc="$locale (French - France)" ;;
+            es_ES*) desc="$locale (Spanish - Spain)" ;;
+            *) desc="$locale" ;;
+        esac
+        localelist+=("$locale" "$desc" "off")
+    fi
+done < <(grep UTF-8 /etc/locale.gen | sort)
 
 # shellcheck disable=SC2207
-locales=($(dialog --stdout --title "Locale" --checklist "Select locales" 20 61 5 "${localelist}"))
+locales=($(dialog --stdout --title "Locale" --checklist "Select locales" 20 61 5 "${localelist[@]}"))
 
 retval=$?
 
@@ -434,29 +452,29 @@ esac
 # Desktop Environment Wayland dialog #
 ######################################
 
-wayland_string=""
+# wayland_string=""
 
-if [[ "$should_install_de" == true ]]; then
+# if [[ "$should_install_de" == true ]]; then
 
-dialog --stdout --title "Desktop Environment" --yesno "Install wayland session?" 10 30
+# dialog --stdout --title "Desktop Environment" --yesno "Install wayland session?" 10 30
 
-retval=$?
+# retval=$?
 
-clear
+# clear
 
-case $retval in
-  0)
-  wayland_string="plasma-wayland-session egl-wayland"
-    ;;
-  1)
-  wayland_string=""
-    dialog --stdout --title "Info" --msgbox "Wayland session will not be set up" 10 30;;
-  255)
-  wayland_string=""
-    dialog --stdout --title "Info" --msgbox "Wayland session will not be set up" 10 30;
-esac
+# case $retval in
+#   0)
+#   wayland_string="plasma-wayland-session egl-wayland"
+#     ;;
+#   1)
+#   wayland_string=""
+#     dialog --stdout --title "Info" --msgbox "Wayland session will not be set up" 10 30;;
+#   255)
+#   wayland_string=""
+#     dialog --stdout --title "Info" --msgbox "Wayland session will not be set up" 10 30;
+# esac
 
-fi
+# fi
 
 #####################
 # GPU driver dialog #
@@ -618,6 +636,6 @@ fi
 
 
 
-#dialog --stdout --title "The End" --msgbox "Your system has now been set up and is ready for use!\nThe root password is the same as your user, so consider changing it for extra security." 10 40
-#clear
+dialog --stdout --title "The End" --msgbox "Your system has now been set up and is ready for use!\nThe root password is the same as your user, so consider changing it for extra security." 10 40
+clear
 exit $EXIT_SUCCESS
