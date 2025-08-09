@@ -1,5 +1,6 @@
 #!/bin/bash
 # Version: <version>
+# readonly VERSION="<version>"
 
 # Exit codes
 readonly EXIT_SUCCESS=0
@@ -82,7 +83,7 @@ confirm_dialog() {
     local height="${3:-10}"
     local width="${4:-30}"
     
-    dialog --stdout --title "$title" --yesno "$message" "$height" "$width"
+    dialog --title "$title" --yesno "$message" "$height" "$width"
     local retval=$?
     clear
     
@@ -97,7 +98,7 @@ ask_yes_no() {
     local width="${4:-30}"
     local cancel_message="$5"
     
-    dialog --stdout --title "$title" --yesno "$message" "$height" "$width"
+    dialog --title "$title" --yesno "$message" "$height" "$width"
     local retval=$?
     clear
     
@@ -105,7 +106,7 @@ ask_yes_no() {
         return 0  # true
     else
         if [[ -n "$cancel_message" ]]; then
-            dialog --stdout --title "Info" --msgbox "$cancel_message" 10 30
+            dialog --title "Info" --msgbox "$cancel_message" 10 30
             clear
         fi
         return 1  # false
@@ -188,6 +189,8 @@ generate_partition_array() {
 mount -o remount,size=4G /run/archiso/cowspace
 pacman -Syu --noconfirm
 pacman -S --noconfirm dialog glibc
+
+dialog --title "ABKIS - $VERSION" --msgbox "Welcome to the Arch install script by Jeppevinkel\n\nhttps://github.com/jeppevinkel/abkis" 8 55
 
 #######################
 # Confirmation dialog #

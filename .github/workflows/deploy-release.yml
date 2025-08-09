@@ -31,15 +31,16 @@ jobs:
         if: ${{ !github.event.release.prerelease }}
         run: |
           git show origin/master:abkis > index.html
+          sed "s/# readonly VERSION=\"<version>\"/readonly VERSION=\"$VERSION\"/" index.html
           sed -i "s/<version>/$VERSION/" index.html
           # Also push to alpha because alpha should always be the newest
-          git show origin/master:abkis > alpha/index.html
-          sed -i "s/<version>/$VERSION/" alpha/index.html
+          cp index.html alpha/index.html
 
       - name: Push to alpha release
         if: ${{ github.event.release.prerelease }}
         run: |
           git show origin/master:abkis > alpha/index.html
+          sed "s/# readonly VERSION=\"<version>\"/readonly VERSION=\"$VERSION\"/" alpha/index.html
           sed -i "s/<version>/$VERSION/" alpha/index.html
 
       - name: Push script to github pages
