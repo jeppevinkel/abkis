@@ -1,6 +1,6 @@
 #!/bin/bash
-# Version: v2.0-alpha.6
-readonly VERSION="v2.0-alpha.6"
+# Version: v2.0-alpha.7
+readonly VERSION="v2.0-alpha.7"
 
 # Exit codes
 readonly EXIT_SUCCESS=0
@@ -182,6 +182,150 @@ generate_partition_array() {
     done <<< "$partitions"
 }
 
+# Helper function to generate disk list for automatic partitioning
+generate_disk_array() {
+    local -n disk_array_ref=$1  # Use nameref to modify array in calling scope
+    
+    local disks
+    disks=$(lsblk -plnx size -I 8 -o name,size,model,type 2>/dev/null | \
+        grep "disk$" | \
+        tac)
+    
+    if [ -z "$disks" ]; then
+        return 1
+    fi
+    
+    # Clear the array
+    disk_array_ref=()
+    
+    # Populate array with alternating device and description
+    while IFS= read -r line; do
+        if [ -n "$line" ]; then
+            local device size model
+            device=$(echo "$line" | awk '{print $1}')
+            size=$(echo "$line" | awk '{print $2}')
+            model=$(echo "$line" | awk '{for(i=3;i<NF;i++) printf "%s ", $i; if(NF>=3) printf "%s", $NF}')
+            
+            # Skip if model is empty, set a default
+            if [ -z "$model" ]; then
+                model="Unknown"
+            fi
+            
+            disk_array_ref+=("$device" "$size [$model]")
+        fi
+    done <<< "$disks"
+}
+
+# Helper function to select disk for automatic partitioning
+select_disk() {
+    local title="$1"
+    local prompt="$2"
+    local -n disk_array_ref=$3
+
+    if [ ${#disk_array_ref[@]} -eq 0 ]; then
+        show_error_and_exit "No disks available for partitioning"
+    fi
+    
+    local selected_disk
+    selected_disk=$(dialog --stdout --title "$title" --menu "$prompt" 0 0 0 "${disk_array_ref[@]}")
+    local retval=$?
+    clear
+    
+    handle_dialog_result $retval
+    
+    function_result="$selected_disk"
+}
+
+# Helper function to perform automatic partitioning
+automatic_partition() {
+    local disk="$1"
+    
+    # Show current partition table if it exists
+    if parted -s "$disk" print 2>/dev/null | grep -q "Partition Table"; then
+        local current_table
+        current_table=$(parted -s "$disk" print 2>/dev/null)
+        dialog --title "Current Partition Table" --msgbox "Current partition table on $disk:\n\n$current_table\n\nThis will be completely erased!" 20 80
+        clear
+    fi
+    
+    # Final confirmation with strong warning
+    if ! ask_yes_no "⚠️  DANGER ZONE  ⚠️" "WARNING: This will COMPLETELY ERASE all data on:\n\n$disk\n\nThis action CANNOT be undone!\n\nProceed with automatic partitioning?" 15 60 "Automatic partitioning cancelled"; then
+        show_error_and_exit "Automatic partitioning cancelled by user"
+    fi
+    
+    # Create new GPT partition table
+    dialog --title "Partitioning" --infobox "Creating new GPT partition table..." 5 40
+    if ! parted -s "$disk" mklabel gpt; then
+        show_error_and_exit "Failed to create GPT partition table"
+    fi
+    
+    # Create EFI partition (1 GiB)
+    dialog --title "Partitioning" --infobox "Creating EFI partition (1 GiB)..." 5 40
+    if ! parted -s "$disk" mkpart primary fat32 1MiB 1GiB; then
+        show_error_and_exit "Failed to create EFI partition"
+    fi
+    if ! parted -s "$disk" set 1 esp on; then
+        show_error_and_exit "Failed to set EFI partition flag"
+    fi
+    
+    # Create swap partition (4 GiB)
+    dialog --title "Partitioning" --infobox "Creating swap partition (4 GiB)..." 5 40
+    if ! parted -s "$disk" mkpart primary linux-swap 1GiB 5GiB; then
+        show_error_and_exit "Failed to create swap partition"
+    fi
+    
+    # Create root partition (remaining space)
+    dialog --title "Partitioning" --infobox "Creating root partition (remaining space)..." 5 40
+    if ! parted -s "$disk" mkpart primary btrfs 5GiB 100%; then
+        show_error_and_exit "Failed to create root partition"
+    fi
+    
+    # Wait for the kernel to recognize the new partitions
+    dialog --title "Partitioning" --infobox "Refreshing partition table..." 5 40
+    partprobe "$disk" 2>/dev/null || true
+    sleep 2
+    
+    # Determine partition naming scheme
+    local p1 p2 p3
+    if [[ "$disk" == *"nvme"* ]] || [[ "$disk" == *"mmcblk"* ]]; then
+        p1="${disk}p1"
+        p2="${disk}p2" 
+        p3="${disk}p3"
+    else
+        p1="${disk}1"
+        p2="${disk}2"
+        p3="${disk}3"
+    fi
+    
+    # Format EFI partition
+    dialog --title "Formatting" --infobox "Formatting EFI partition..." 5 40
+    if ! mkfs.fat -F 32 "$p1"; then
+        show_error_and_exit "Failed to format EFI partition"
+    fi
+    
+    # Format swap partition
+    dialog --title "Formatting" --infobox "Formatting swap partition..." 5 40
+    if ! mkswap "$p2"; then
+        show_error_and_exit "Failed to format swap partition"
+    fi
+    
+    # Format root partition
+    dialog --title "Formatting" --infobox "Formatting root partition..." 5 40
+    if ! mkfs.btrfs -f -L "ArchRoot" "$p3"; then
+        show_error_and_exit "Failed to format root partition"
+    fi
+    
+    clear
+    
+    # Set global partition variables
+    efi_partition="$p1"
+    root_partition="$p3" 
+    swap_partition="$p2"
+    
+    dialog --title "Success" --msgbox "Automatic partitioning completed successfully!\n\nEFI:  $efi_partition\nRoot: $root_partition\nSwap: $swap_partition" 12 50
+    clear
+}
+
 ###############
 # Main Script #
 ###############
@@ -193,13 +337,28 @@ pacman -S --noconfirm dialog glibc
 dialog --title "ABKIS - $VERSION" --msgbox "Welcome to the Arch install script by Jeppevinkel\n\nhttps://github.com/jeppevinkel/abkis" 8 55
 
 #######################
-# Confirmation dialog #
+# Partitioning mode dialog #
 #######################
 
-if ! ask_yes_no "Confirm" "Have you set up the partition table?" 10 40 "I expect the following partitions\n\nEfi:  FAT32\nRoot: BTRFS\nSwap: SWAP"; then
-    clear
-    exit $EXIT_CANCELLED
-fi
+partitioning_mode=$(dialog --stdout --title "Partitioning" --menu "Choose partitioning method" 15 60 2 \
+    "automatic" "Automatic - Select disk and auto-partition" \
+    "manual" "Manual - Use existing partitions")
+retval=$?
+clear
+
+handle_dialog_result $retval
+
+case $partitioning_mode in
+    "automatic")
+        # Will handle automatic partitioning
+        ;;
+    "manual")
+        # Continue with existing manual partition selection
+        ;;
+    *)
+        show_error_and_exit "Invalid partitioning mode selected"
+        ;;
+esac
 
 ###################
 # Hostname dialog #
@@ -236,57 +395,64 @@ fi
 confirm_dialog "Confirm" "Hostname: $hostname\nUsername: $username"
 
 ####################
-# Partition dialog #
+# Partition setup #
 ####################
 
-declare -a partition_list
-if ! generate_partition_array partition_list; then
-    show_error_and_exit "No suitable partitions found. Please create partitions first."
+if [ "$partitioning_mode" = "automatic" ]; then
+    #########################
+    # Automatic partitioning #
+    #########################
+    
+    # Install required tools for partitioning
+    pacman -S --noconfirm parted
+    
+    declare -a disk_list
+    if ! generate_disk_array disk_list; then
+        show_error_and_exit "No disks available for automatic partitioning"
+    fi
+    
+    # Select disk for automatic partitioning
+    select_disk "Automatic Partitioning" "Select disk to partition automatically\n\n⚠️  WARNING: ALL DATA WILL BE ERASED!" disk_list
+    selected_disk="$function_result"
+    
+    # Perform automatic partitioning
+    automatic_partition "$selected_disk"
+    
+else
+    #########################
+    # Manual partition selection #
+    #########################
+    
+    declare -a partition_list
+    if ! generate_partition_array partition_list; then
+        show_error_and_exit "No suitable partitions found. Please create partitions first."
+    fi
+
+    selected_partitions=""
+
+    # Select EFI partition
+    select_partition "EFI System" "Select EFI partition" "vfat" "FAT32" partition_list "$selected_partitions"
+    efi_partition="$function_result"
+    selected_partitions="$selected_partitions $efi_partition"
+
+    # Select root partition
+    select_partition "Root System" "Select root partition" "btrfs" "BTRFS" partition_list "$selected_partitions"
+    root_partition="$function_result"
+    selected_partitions="$selected_partitions $root_partition"
+
+    # Select swap partition
+    select_partition "Swap Space" "Select swap partition" "swap" "SWAP" partition_list "$selected_partitions"
+    swap_partition="$function_result"
 fi
-
-selected_partitions=""
-
-# Select EFI partition
-select_partition "EFI System" "Select EFI partition" "vfat" "FAT32" partition_list "$selected_partitions"
-efi_partition="$function_result"
-selected_partitions="$selected_partitions $efi_partition"
-
-# Select root partition
-select_partition "Root System" "Select root partition" "btrfs" "BTRFS" partition_list "$selected_partitions"
-root_partition="$function_result"
-selected_partitions="$selected_partitions $root_partition"
-
-# Select swap partition
-select_partition "Swap Space" "Select swap partition" "swap" "SWAP" partition_list "$selected_partitions"
-swap_partition="$function_result"
 
 #######################
 # Confirmation dialog #
 #######################
 
-if ! ask_yes_no "Confirm" "Efi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}" 10 30 "Installation has been cancelled"; then
+if ! ask_yes_no "Confirm Partitions" "Efi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}" 12 50 "Installation has been cancelled"; then
     clear
     exit $EXIT_CANCELLED
 fi
-
-dialog --stdout --title "Confirm" --yesno "Efi:  ${efi_partition}\nRoot: ${root_partition}\nSwap: ${swap_partition}" 10 30
-
-retval=$?
-
-clear
-
-case $retval in
-  0)
-    ;;
-  1)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-  255)
-    dialog --stdout --title "Info" --msgbox "Installation has been cancelled" 10 30;
-    clear;
-    exit 1;;
-esac
 
 #################
 # Locale dialog #
@@ -537,10 +703,16 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 ####################
-# Atumatic section #
+# Automatic section #
 ####################
 
-mkswap "$swap_partition"
+# Only initialize swap if we're in manual mode (automatic mode already did this)
+if [ "$partitioning_mode" = "manual" ]; then
+    mkswap "$swap_partition"
+fi
+
+# Enable swap for both modes
+swapon "$swap_partition"
 
 mount "$root_partition" /mnt
 
